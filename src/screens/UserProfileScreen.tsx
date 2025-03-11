@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, Modal, Animated } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, Modal, Animated, ActivityIndicator, RefreshControl } from 'react-native';
 import Header from '../components/Header';
 import Icon from 'react-native-vector-icons/Feather';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +12,9 @@ const UserProfileScreen = () => {
   const navigation = useNavigation();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [scaleAnim] = useState(new Animated.Value(0));
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pressedButton, setPressedButton] = useState<string | null>(null);
 
   const handleLogoutPress = () => {
     setShowLogoutModal(true);
@@ -31,21 +34,67 @@ const UserProfileScreen = () => {
     }).start(() => setShowLogoutModal(false));
   };
 
-  const handleLogout = () => {
-    setShowLogoutModal(false);
-    scaleAnim.setValue(0);
-    AsyncStorage.removeItem('userToken');
-    AsyncStorage.removeItem('userData');
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' as never }],
-    });
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      setShowLogoutModal(false);
+      scaleAnim.setValue(0);
+      
+      await AsyncStorage.removeItem('userToken');
+      await AsyncStorage.removeItem('userData');
+      
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' as never }],
+      });
+    } catch (error) {
+      setShowLogoutModal(false);
+      Alert.alert(
+        'Error',
+        'Failed to logout. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      // Add your data refresh logic here
+      // For example: await fetchUserData();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to refresh data');
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  const handlePressIn = (buttonName: string) => {
+    setPressedButton(buttonName);
+  };
+
+  const handlePressOut = () => {
+    setPressedButton(null);
   };
 
   return (
     <View style={styles.container}>
       <Header />
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#1E6B91"
+            colors={['#1E6B91', '#2988B5']}
+          />
+        }
+        contentContainerStyle={{ paddingBottom: 70 }}
+      >
         <LinearGradient
           colors={['#1E6B91', '#2988B5']}
           start={{ x: 0, y: 0 }}
@@ -89,28 +138,42 @@ const UserProfileScreen = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.quickActions}>
-              <TouchableOpacity style={styles.actionButton}>
+              <TouchableOpacity 
+                style={[styles.actionButton, pressedButton === 'donate' && styles.actionButtonPressed]}
+                onPressIn={() => handlePressIn('donate')}
+                onPressOut={handlePressOut}
+              >
                 <LinearGradient
                   colors={['#1E6B91', '#2988B5']}
-                  style={styles.actionGradient}
+                  style={[styles.actionGradient, pressedButton === 'donate' && styles.actionGradientPressed]}
                 >
                   <Icon name="heart" size={24} color="#fff" />
                 </LinearGradient>
                 <Text style={styles.actionText}>Donate</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
+
+              <TouchableOpacity 
+                style={[styles.actionButton, pressedButton === 'history' && styles.actionButtonPressed]}
+                onPressIn={() => handlePressIn('history')}
+                onPressOut={handlePressOut}
+              >
                 <LinearGradient
                   colors={['#1E6B91', '#2988B5']}
-                  style={styles.actionGradient}
+                  style={[styles.actionGradient, pressedButton === 'history' && styles.actionGradientPressed]}
                 >
                   <Icon name="clock" size={24} color="#fff" />
                 </LinearGradient>
                 <Text style={styles.actionText}>History</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
+
+              <TouchableOpacity 
+                style={[styles.actionButton, pressedButton === 'favorites' && styles.actionButtonPressed]}
+                onPressIn={() => handlePressIn('favorites')}
+                onPressOut={handlePressOut}
+              >
                 <LinearGradient
                   colors={['#1E6B91', '#2988B5']}
-                  style={styles.actionGradient}
+                  style={[styles.actionGradient, pressedButton === 'favorites' && styles.actionGradientPressed]}
                 >
                   <Icon name="star" size={24} color="#fff" />
                 </LinearGradient>
@@ -119,30 +182,74 @@ const UserProfileScreen = () => {
             </View>
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, styles.settingsSection]}>
             <Text style={styles.sectionTitle}>Settings</Text>
-            <View style={styles.menuContainer}>
-              <TouchableOpacity style={styles.menuItem}>
-                <Icon name="user" size={22} color="#164860" />
-                <Text style={styles.menuText}>Edit Profile</Text>
-                <Icon name="chevron-right" size={20} color="#999" />
+            <View style={styles.settingsContainer}>
+              <TouchableOpacity style={styles.settingsItem}>
+                <View style={styles.settingsIconContainer}>
+                  <LinearGradient
+                    colors={['#1E6B91', '#2988B5']}
+                    style={styles.settingsIconGradient}
+                  >
+                    <Icon name="user" size={22} color="#fff" />
+                  </LinearGradient>
+                </View>
+                <View style={styles.settingsContent}>
+                  <Text style={styles.settingsText}>Edit Profile</Text>
+                  <Text style={styles.settingsSubtext}>Update your personal information</Text>
+                </View>
+                <Icon name="chevron-right" size={20} color="#999" style={styles.chevronIcon} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem}>
-                <Icon name="bell" size={22} color="#164860" />
-                <Text style={styles.menuText}>Notifications</Text>
-                <Icon name="chevron-right" size={20} color="#999" />
+              
+              <TouchableOpacity style={styles.settingsItem}>
+                <View style={styles.settingsIconContainer}>
+                  <LinearGradient
+                    colors={['#1E6B91', '#2988B5']}
+                    style={styles.settingsIconGradient}
+                  >
+                    <Icon name="bell" size={22} color="#fff" />
+                  </LinearGradient>
+                </View>
+                <View style={styles.settingsContent}>
+                  <Text style={styles.settingsText}>Notifications</Text>
+                  <Text style={styles.settingsSubtext}>Manage your notification preferences</Text>
+                </View>
+                <Icon name="chevron-right" size={20} color="#999" style={styles.chevronIcon} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem}>
-                <Icon name="lock" size={22} color="#164860" />
-                <Text style={styles.menuText}>Privacy & Security</Text>
-                <Icon name="chevron-right" size={20} color="#999" />
+              
+              <TouchableOpacity style={styles.settingsItem}>
+                <View style={styles.settingsIconContainer}>
+                  <LinearGradient
+                    colors={['#1E6B91', '#2988B5']}
+                    style={styles.settingsIconGradient}
+                  >
+                    <Icon name="lock" size={22} color="#fff" />
+                  </LinearGradient>
+                </View>
+                <View style={styles.settingsContent}>
+                  <Text style={styles.settingsText}>Privacy & Security</Text>
+                  <Text style={styles.settingsSubtext}>Control your privacy settings</Text>
+                </View>
+                <Icon name="chevron-right" size={20} color="#999" style={styles.chevronIcon} />
               </TouchableOpacity>
+              
               <TouchableOpacity 
-                style={[styles.menuItem, styles.logoutItem]}
+                style={[styles.settingsItem, styles.logoutItem]}
                 onPress={handleLogoutPress}
               >
-                <Icon name="log-out" size={22} color="#FF3B30" />
-                <Text style={[styles.menuText, styles.logoutText]}>Logout</Text>
+                <View style={styles.settingsIconContainer}>
+                  <LinearGradient
+                    colors={['#FF3B30', '#FF6B60']}
+                    style={styles.settingsIconGradient}
+                  >
+                    <Icon name="log-out" size={22} color="#fff" />
+                  </LinearGradient>
+                </View>
+                <View style={styles.settingsContent}>
+                  <Text style={[styles.settingsText, styles.logoutText]}>Logout</Text>
+                  <Text style={[styles.settingsSubtext, styles.logoutSubtext]}>Sign out from your account</Text>
+                </View>
+                <Icon name="chevron-right" size={20} color="#FF3B30" style={styles.chevronIcon} />
               </TouchableOpacity>
             </View>
           </View>
@@ -174,7 +281,7 @@ const UserProfileScreen = () => {
             ]}
           >
             <LinearGradient
-              colors={['#1E6B91', '#2988B5']}
+              colors={['#164860', '#164860']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.modalHeader}
@@ -193,8 +300,13 @@ const UserProfileScreen = () => {
               <TouchableOpacity 
                 style={[styles.modalButton, styles.logoutButton]} 
                 onPress={handleLogout}
+                disabled={isLoggingOut}
               >
-                <Text style={styles.logoutButtonText}>Log Out</Text>
+                {isLoggingOut ? (
+                  <ActivityIndicator color="#FF3B30" />
+                ) : (
+                  <Text style={styles.logoutButtonText}>Log Out</Text>
+                )}
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -294,13 +406,20 @@ const styles = StyleSheet.create({
     paddingTop: 11,
   },
   section: {
-    padding: 26,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  settingsSection: {
+    padding: 0,
+    marginTop: 15,
+    marginHorizontal: -20,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#164860',
     marginBottom: 15,
+    paddingHorizontal: 20,
   },
   quickActions: {
     flexDirection: 'row',
@@ -323,35 +442,52 @@ const styles = StyleSheet.create({
     color: '#164860',
     fontWeight: '500',
   },
-  menuContainer: {
+  settingsContainer: {
+    width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
-  menuItem: {
+  settingsItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    gap: 12,
   },
-  menuText: {
+  settingsIconContainer: {
+    marginRight: 16,
+  },
+  settingsIconGradient: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsContent: {
     flex: 1,
+  },
+  settingsText: {
     fontSize: 16,
+    fontWeight: '600',
     color: '#333',
-    fontWeight: '500',
+    marginBottom: 4,
+  },
+  settingsSubtext: {
+    fontSize: 13,
+    color: '#777',
   },
   logoutItem: {
     borderBottomWidth: 0,
+    borderTopWidth: 4,
+    borderTopColor: '#f0f0f0',
   },
   logoutText: {
     color: '#FF3B30',
+  },
+  logoutSubtext: {
+    color: '#FF6B60',
   },
   modalOverlay: {
     flex: 1,
@@ -414,6 +550,15 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     fontSize: 16,
     fontWeight: '600',
+  },
+  chevronIcon: {
+    marginLeft: 8,
+  },
+  actionButtonPressed: {
+    transform: [{ scale: 0.95 }],
+  },
+  actionGradientPressed: {
+    opacity: 0.8,
   },
 });
 

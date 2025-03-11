@@ -190,7 +190,7 @@ const NGOScreen = () => {
     <View style={styles.container}>
       <Header />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>NGO Partners</Text>
           <TouchableOpacity style={styles.filterButton}>
@@ -294,6 +294,13 @@ const NGOScreen = () => {
               <Text style={styles.filterLabel}>Select Categories</Text>
               <TouchableOpacity style={styles.dropdownButton}>
                 <Text style={styles.dropdownText}>All Categories</Text>
+                <MaterialCommunityIcons name="chevron-down" size={20} color="#164860" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.filterItem}>
+              <Text style={styles.filterLabel}>Sort by</Text>
+              <TouchableOpacity style={styles.dropdownButton}>
+                <Text style={styles.dropdownText}>Rating</Text>
                 <MaterialCommunityIcons name="chevron-down" size={20} color="#164860" />
               </TouchableOpacity>
             </View>
