@@ -326,6 +326,7 @@ const styles = StyleSheet.create({
   },
   gradientHeader: {
     paddingTop: 15,
+    
   },
   profileHeader: {
     padding: 24,

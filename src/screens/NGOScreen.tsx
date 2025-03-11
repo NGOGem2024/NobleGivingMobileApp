@@ -115,7 +115,7 @@ const NGO_DATA = [
   },
 ];
 
-const NGOCard = ({ ngo }) => {
+const NGOCard = ({ ngo }: { ngo: any }) => {
   return (
     <View style={styles.ngoCard}>
       <View style={styles.cardImageContainer}>
@@ -151,7 +151,7 @@ const NGOCard = ({ ngo }) => {
         <Text style={styles.ngoId}>ID: {ngo.id_code}</Text>
         
         <View style={styles.categoryContainer}>
-          {ngo.categories.map((category, index) => (
+          {ngo.categories.map((category: string, index: number) => (
             <View key={index} style={styles.categoryTag}>
               <Text style={styles.categoryText}>{category}</Text>
             </View>
@@ -176,14 +176,19 @@ const NGOCard = ({ ngo }) => {
 const NGOScreen = () => {
   const [searchText, setSearchText] = useState('');
   const [categories, setCategories] = useState(CATEGORIES);
+  const [showFilters, setShowFilters] = useState(false);
   
-  const toggleCategory = (id) => {
+  const toggleCategory = (id: string) => {
     setCategories(
       categories.map(cat => ({
         ...cat,
         selected: cat.id === id ? true : false
       }))
     );
+  };
+
+  const toggleFilters = () => {
+    setShowFilters(!showFilters);
   };
 
   return (
@@ -193,20 +198,73 @@ const NGOScreen = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>NGO Partners</Text>
-          <TouchableOpacity style={styles.filterButton}>
-            <Feather name="filter" size={18} color="#164860" />
+          <TouchableOpacity 
+            style={[
+              styles.filterButton, 
+              showFilters && { backgroundColor: '#164860' }
+            ]} 
+            onPress={toggleFilters}
+          >
+            <Feather name="filter" size={18} color={showFilters ? '#fff' : '#164860'} />
           </TouchableOpacity>
         </View>
         
-        <View style={styles.searchContainer}>
-          <Feather name="search" size={20} color="#999" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search NGOs"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
+        <View style={styles.searchRow}>
+          <View style={styles.searchContainer}>
+            <Feather name="search" size={20} color="#999" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search NGOs"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+          </View>
+          
+          <TouchableOpacity style={styles.mapButton}>
+            <Feather name="map-pin" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
+        
+        {showFilters && (
+          <View style={styles.filterContainer}>
+            <View style={styles.filterRow}>
+              <View style={styles.filterItem}>
+                <Text style={styles.filterLabel}>State</Text>
+                <TouchableOpacity style={styles.dropdownButton}>
+                  <Text style={styles.dropdownText}>All States</Text>
+                  <MaterialCommunityIcons name="chevron-down" size={16} color="#164860" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.filterItem}>
+                <Text style={styles.filterLabel}>City</Text>
+                <TouchableOpacity style={styles.dropdownButton}>
+                  <Text style={styles.dropdownText}>All Cities</Text>
+                  <MaterialCommunityIcons name="chevron-down" size={16} color="#164860" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <View style={styles.filterRow}>
+              <View style={styles.filterItem}>
+                <Text style={styles.filterLabel}>Categories</Text>
+                <TouchableOpacity style={styles.dropdownButton}>
+                  <Text style={styles.dropdownText}>All Categories</Text>
+                  <MaterialCommunityIcons name="chevron-down" size={16} color="#164860" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.filterItem}>
+                <Text style={styles.filterLabel}>Sort by</Text>
+                <TouchableOpacity style={styles.dropdownButton}>
+                  <Text style={styles.dropdownText}>Rating</Text>
+                  <MaterialCommunityIcons name="chevron-down" size={16} color="#164860" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+          </View>
+        )}
         
         <ScrollView 
           horizontal 
@@ -269,48 +327,6 @@ const NGOScreen = () => {
             <NGOCard key={ngo.id} ngo={ngo} />
           ))}
         </View>
-        
-        <View style={styles.filterSection}>
-          <Text style={styles.filterTitle}>Find Your Cause</Text>
-          
-          <View style={styles.filterOptions}>
-            <View style={styles.filterItem}>
-              <Text style={styles.filterLabel}>Select State</Text>
-              <TouchableOpacity style={styles.dropdownButton}>
-                <Text style={styles.dropdownText}>All States</Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color="#164860" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.filterItem}>
-              <Text style={styles.filterLabel}>Select City</Text>
-              <TouchableOpacity style={styles.dropdownButton}>
-                <Text style={styles.dropdownText}>All Cities</Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color="#164860" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.filterItem}>
-              <Text style={styles.filterLabel}>Select Categories</Text>
-              <TouchableOpacity style={styles.dropdownButton}>
-                <Text style={styles.dropdownText}>All Categories</Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color="#164860" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.filterItem}>
-              <Text style={styles.filterLabel}>Sort by</Text>
-              <TouchableOpacity style={styles.dropdownButton}>
-                <Text style={styles.dropdownText}>Rating</Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color="#164860" />
-              </TouchableOpacity>
-            </View>
-            
-            <TouchableOpacity style={styles.mapSearchButton}>
-              <Feather name="map-pin" size={16} color="#fff" />
-              <Text style={styles.mapSearchText}>Map Search</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </ScrollView>
       
     </View>
@@ -341,6 +357,14 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#e0e0e0',
+    borderWidth: 1,
+    borderColor: '#164860',
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -348,9 +372,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 10,
     paddingHorizontal: 12,
-    marginBottom: 16,
     height: 50,
- 
+    flex: 1,
+    marginRight: 10,
   },
   searchIcon: {
     marginRight: 10,
@@ -533,64 +557,92 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#164860',
   },
-  filterSection: {
+  topFilterSection: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 16,
-    marginBottom: 20,
+    padding: 12,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
   },
-  filterTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#164860',
-    marginBottom: 16,
-    textAlign: 'center',
+  topFilterOptions: {
+    gap: 8,
   },
-  filterOptions: {
-    gap: 12,
+  topFilterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  filterItem: {
-    marginBottom: 12,
+  topFilterItem: {
+    flex: 1,
   },
-  filterLabel: {
-    fontSize: 14,
+  topFilterLabel: {
+    fontSize: 12,
     color: '#666',
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  dropdownButton: {
+  topDropdownButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  dropdownText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  mapSearchButton: {
+  mapButton: {
     backgroundColor: '#164860',
     borderRadius: 8,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    marginTop: 8,
+    width: 40,
+    height: 40,
   },
-  mapSearchText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
+  filterContainer: {
+  backgroundColor: '#fff',
+  borderRadius: 10,
+  padding: 16,
+  marginBottom: 16,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 3,
+  elevation: 2,
+},
+filterRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginBottom: 12,
+},
+filterItem: {
+  flex: 1,
+  marginHorizontal: 4,
+},
+filterLabel: {
+  fontSize: 12,
+  color: '#666',
+  marginBottom: 4,
+},
+dropdownButton: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  backgroundColor: '#f5f5f5',
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 12,
+  borderWidth: 1,
+  borderColor: '#e0e0e0',
+},
+dropdownText: {
+  fontSize: 14,
+  color: '#333',
+},
 });
 
 export default NGOScreen;
