@@ -64,54 +64,94 @@ const CATEGORIES = [
 const NGO_DATA = [
   {
     id: '1',
+    name: 'Samarthya Kalyankari Sanstha',
+    rating: 4.5,
+    city: 'Osmanabad',
+    state: 'Maharashtra',
+    id_code: 'MH-2017-0164686',
+    categories: ['Children'],
+    verified: true,
+    imageUrl: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757240/samarthya-Kalyankari_quxzvw.webp'
+  },
+  {
+    id: '2',
+    name: 'Smile Organization',
+    rating: 4.5,
+    city: 'Ballari',
+    state: 'Karnataka',
+    id_code: 'KA-2012-0053121',
+    categories: ['Children', 'Aged/Elderly'],
+    verified: true,
+    imageUrl: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757239/smileorgamization_uhng2s.jpg' 
+  },
+  {
+    id: '3',
+    name: 'Spherule Foundation',
+    rating: 4.5,
+    city: 'Pune',
+    state: 'Maharashtra',
+    id_code: 'MH-2017-0179219',
+    categories: ['Women Development & Empowerment', 'Education & Literacy','Environment & Forests'],
+    verified: true,
+    imageUrl: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757240/spherule_foundation_gxd44q.jpg' 
+  },
+  {
+    id: '4',
     name: 'Jeevan Aadhar Society',
     rating: 4.5,
-    city: 'Mahabubnagar',
+    city: 'Mahabubabad',
     state: 'Telangana',
     id_code: 'TS-2019-0234853',
     categories: ['Women Development & Empowerment', 'Environment & Forests'],
     verified: true,
+    imageUrl: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757240/jeevan-adhaar-society_ljgi4x.jpg' 
   },
   {
-    id: '2',
+    id: '5',
     name: 'SAHAYOG',
     rating: 4.5,
-    hashtag: '#leavenoonebehind',
+    // hashtag: '#leavenoonebehind',
     city: 'Khordha',
     state: 'Odisha',
     id_code: 'OR-2012-0053976',
     categories: ['Rural Development & Poverty Alleviation', 'Health & Family Welfare'],
     verified: true,
+    imageUrl: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757240/Sahayog_phxron.jpg'
   },
   {
-    id: '3',
+    id: '6',
     name: 'Snehashraya Foundation',
-    rating: 4.7,
+    rating: 4.5,
     city: 'Bangalore',
     state: 'Karnataka',
     id_code: 'KA-2018-0219857',
     categories: ['Education & Literacy', 'Health & Family Welfare'],
     verified: true,
+    imageUrl: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757240/snehasharaya-foundation_lm8iu9.jpg'
   },
   {
-    id: '4',
+    id: '7',
     name: 'Centre for Social Responsibility and Leadership',
-    rating: 4.2,
+    rating: 4,
     city: 'New Delhi',
-    state: 'Delhi',
+    state: 'New Delhi',
     id_code: 'DL-2017-0118174',
     categories: ['Education & Literacy'],
     verified: true,
+    imageUrl: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757239/centreforsocial-responsibilty_zdauzd.webp'
   },
+  
+  
   {
-    id: '5',
-    name: 'Samarthya Kalyankari Sanstha',
-    rating: 4.8,
-    city: 'Osmanabad',
+    id: '8',
+    name: 'Pagaria Welfare Foundation',
+    rating: 4,
+    city: 'Navi Mumbai',
     state: 'Maharashtra',
-    id_code: 'MH-2017-0164886',
-    categories: ['Children'],
+    id_code: 'MH-2020-0251924',
+    categories: ['Education & Literacy','Women Development & Empowerment','Rural Development & Poverty Alleviation', 'Children'],
     verified: true,
+    imageUrl: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757239/pagaria-welfare-foundation_dwk6hf.webp' 
   },
 ];
 
@@ -120,17 +160,13 @@ const NGOCard = ({ ngo }: { ngo: any }) => {
     <View style={styles.ngoCard}>
       <View style={styles.cardImageContainer}>
         <Image 
-          source={{ uri: 'https://picsum.photos/200/200' }} 
+          source={{ uri: ngo.imageUrl }} 
           style={styles.cardImage} 
         />
-        {ngo.hashtag && (
-          <View style={styles.hashtagContainer}>
-            <Text style={styles.hashtag}>{ngo.hashtag}</Text>
-          </View>
-        )}
-        <View style={styles.verifiedBadge}>
-          <AntDesign name="check" size={14} color="white" />
-        </View>
+        <Image 
+          source={{ uri: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741763259/verified-badge-removebg-preview_ekji2j.png' }}
+          style={styles.verifiedBadge}
+        />
       </View>
       
       <View style={styles.cardContent}>
@@ -138,11 +174,17 @@ const NGOCard = ({ ngo }: { ngo: any }) => {
         
         <View style={styles.ratingContainer}>
           {Array(5).fill(0).map((_, i) => (
-            <AntDesign 
+            <FontAwesome 
               key={i} 
-              name={i < Math.floor(ngo.rating) ? "star" : i < ngo.rating ? "staro" : "staro"} 
+              name={
+                i < Math.floor(ngo.rating)
+                  ? "star"
+                  : i === Math.floor(ngo.rating) && ngo.rating % 1 !== 0
+                  ? "star-half-o"
+                  : "star-o"
+              } 
               size={14} 
-              color={i < ngo.rating ? "#164860" : "#BDBDBD"} 
+              color={i < Math.ceil(ngo.rating) ? "#164860" : "#BDBDBD"} 
               style={{ marginRight: 2 }}
             />
           ))}
@@ -159,14 +201,18 @@ const NGOCard = ({ ngo }: { ngo: any }) => {
         </View>
         
         <View style={styles.locationContainer}>
-          <Text style={[styles.locationText, styles.cityText]}>
-            <Feather name="map-pin" size={12} color="#164860" /> 
-            City: {ngo.city}
-          </Text>
-          <Text style={[styles.locationText, styles.cityText]}>
-            <Feather name="map-pin" size={12} color="#164860" /> 
-            State: {ngo.state}
-          </Text>
+          <View style={styles.locationItem}>
+            <Feather name="map-pin" size={12} color="#164860" style={{ marginRight: 2 }} />
+            <Text style={[styles.locationText, styles.cityText]}>
+              City: {ngo.city}
+            </Text>
+          </View>
+          <View style={styles.locationItem}>
+            <Feather name="map-pin" size={12} color="#164860" style={{ marginRight: 2 }} />
+            <Text style={[styles.locationText, styles.cityText]}>
+              State: {ngo.state}
+            </Text>
+          </View>
         </View>
       </View>
     </View>
@@ -485,30 +531,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 160,
   },
-  hashtagContainer: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  hashtag: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#164860',
-  },
   verifiedBadge: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: '#00BFA6',
-    borderRadius: 15,
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    top: 5,
+    right: 5,
+    width: 42,
+    height: 42,
+    resizeMode: 'contain'
   },
   cardContent: {
     padding: 16,
@@ -548,6 +577,10 @@ const styles = StyleSheet.create({
   locationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  locationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   locationText: {
     fontSize: 12,
