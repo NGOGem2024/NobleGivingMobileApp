@@ -238,18 +238,17 @@ const UserProfileScreen = () => {
                 onPress={handleLogoutPress}
               >
                 <View style={styles.settingsIconContainer}>
-                  <LinearGradient
-                    colors={['#FF3B30', '#FF6B60']}
-                    style={styles.settingsIconGradient}
+                  <View
+                    style={[styles.settingsIconGradient, { backgroundColor: '#E57373' }]}
                   >
                     <Icon name="log-out" size={22} color="#fff" />
-                  </LinearGradient>
+                  </View>
                 </View>
                 <View style={styles.settingsContent}>
                   <Text style={[styles.settingsText, styles.logoutText]}>Logout</Text>
                   <Text style={[styles.settingsSubtext, styles.logoutSubtext]}>Sign out from your account</Text>
                 </View>
-                <Icon name="chevron-right" size={20} color="#FF3B30" style={styles.chevronIcon} />
+                <Icon name="chevron-right" size={20} color="#E57373" style={styles.chevronIcon} />
               </TouchableOpacity>
             </View>
           </View>

@@ -44,6 +44,7 @@ import {
   Image,
   TextInput,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -66,7 +67,7 @@ const NGO_DATA = [
     id: '1',
     name: 'Samarthya Kalyankari Sanstha',
     rating: 4.5,
-    city: 'Osmanabad',
+    city: 'Osmanabad, Maharashtra',
     state: 'Maharashtra',
     id_code: 'MH-2017-0164686',
     categories: ['Children'],
@@ -77,7 +78,7 @@ const NGO_DATA = [
     id: '2',
     name: 'Smile Organization',
     rating: 4.5,
-    city: 'Ballari',
+    city: 'Ballari, Karnataka',
     state: 'Karnataka',
     id_code: 'KA-2012-0053121',
     categories: ['Children', 'Aged/Elderly'],
@@ -88,7 +89,7 @@ const NGO_DATA = [
     id: '3',
     name: 'Spherule Foundation',
     rating: 4.5,
-    city: 'Pune',
+    city: 'Pune, Maharashtra',
     state: 'Maharashtra',
     id_code: 'MH-2017-0179219',
     categories: ['Women Development & Empowerment', 'Education & Literacy','Environment & Forests'],
@@ -99,7 +100,7 @@ const NGO_DATA = [
     id: '4',
     name: 'Jeevan Aadhar Society',
     rating: 4.5,
-    city: 'Mahabubabad',
+    city: 'Mahabubabad, Telangana',
     state: 'Telangana',
     id_code: 'TS-2019-0234853',
     categories: ['Women Development & Empowerment', 'Environment & Forests'],
@@ -111,7 +112,7 @@ const NGO_DATA = [
     name: 'SAHAYOG',
     rating: 4.5,
     // hashtag: '#leavenoonebehind',
-    city: 'Khordha',
+    city: 'Khordha, Odisha',
     state: 'Odisha',
     id_code: 'OR-2012-0053976',
     categories: ['Rural Development & Poverty Alleviation', 'Health & Family Welfare'],
@@ -122,7 +123,7 @@ const NGO_DATA = [
     id: '6',
     name: 'Snehashraya Foundation',
     rating: 4.5,
-    city: 'Bangalore',
+    city: 'Bangalore, Karnataka',
     state: 'Karnataka',
     id_code: 'KA-2018-0219857',
     categories: ['Education & Literacy', 'Health & Family Welfare'],
@@ -133,7 +134,7 @@ const NGO_DATA = [
     id: '7',
     name: 'Centre for Social Responsibility and Leadership',
     rating: 4,
-    city: 'New Delhi',
+    city: 'Delhi, New Delhi',
     state: 'New Delhi',
     id_code: 'DL-2017-0118174',
     categories: ['Education & Literacy'],
@@ -146,7 +147,7 @@ const NGO_DATA = [
     id: '8',
     name: 'Pagaria Welfare Foundation',
     rating: 4,
-    city: 'Navi Mumbai',
+    city: 'Navi Mumbai, Maharashtra',
     state: 'Maharashtra',
     id_code: 'MH-2020-0251924',
     categories: ['Education & Literacy','Women Development & Empowerment','Rural Development & Poverty Alleviation', 'Children'],
@@ -156,66 +157,76 @@ const NGO_DATA = [
 ];
 
 const NGOCard = ({ ngo }: { ngo: any }) => {
+  const navigation = useNavigation();
+  
+  const handleNGOPress = () => {
+    if (ngo.name === 'Samarthya Kalyankari Sanstha') {
+      navigation.navigate('SamarthyaNGO' as never);
+    }
+  };
+
   return (
-    <View style={styles.ngoCard}>
-      <View style={styles.cardImageContainer}>
-        <Image 
-          source={{ uri: ngo.imageUrl }} 
-          style={styles.cardImage} 
-        />
-        <Image 
-          source={{ uri: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741763259/verified-badge-removebg-preview_ekji2j.png' }}
-          style={styles.verifiedBadge}
-        />
-      </View>
-      
-      <View style={styles.cardContent}>
-        <Text style={styles.ngoName}>{ngo.name}</Text>
-        
-        <View style={styles.ratingContainer}>
-          {Array(5).fill(0).map((_, i) => (
-            <FontAwesome 
-              key={i} 
-              name={
-                i < Math.floor(ngo.rating)
-                  ? "star"
-                  : i === Math.floor(ngo.rating) && ngo.rating % 1 !== 0
-                  ? "star-half-o"
-                  : "star-o"
-              } 
-              size={14} 
-              color={i < Math.ceil(ngo.rating) ? "#164860" : "#BDBDBD"} 
-              style={{ marginRight: 2 }}
-            />
-          ))}
+    <TouchableOpacity onPress={handleNGOPress}>
+      <View style={styles.ngoCard}>
+        <View style={styles.cardImageContainer}>
+          <Image 
+            source={{ uri: ngo.imageUrl }} 
+            style={styles.cardImage} 
+          />
+          <Image 
+            source={{ uri: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741763259/verified-badge-removebg-preview_ekji2j.png' }}
+            style={styles.verifiedBadge}
+          />
         </View>
         
-        <Text style={styles.ngoId}>ID: {ngo.id_code}</Text>
-        
-        <View style={styles.categoryContainer}>
-          {ngo.categories.map((category: string, index: number) => (
-            <View key={index} style={styles.categoryTag}>
-              <Text style={styles.categoryText}>{category}</Text>
+        <View style={styles.cardContent}>
+          <Text style={styles.ngoName}>{ngo.name}</Text>
+          
+          <View style={styles.ratingContainer}>
+            {Array(5).fill(0).map((_, i) => (
+              <FontAwesome 
+                key={i} 
+                name={
+                  i < Math.floor(ngo.rating)
+                    ? "star"
+                    : i === Math.floor(ngo.rating) && ngo.rating % 1 !== 0
+                    ? "star-half-o"
+                    : "star-o"
+                } 
+                size={14} 
+                color={i < Math.ceil(ngo.rating) ? "#164860" : "#BDBDBD"} 
+                style={{ marginRight: 2 }}
+              />
+            ))}
+          </View>
+          
+          <Text style={styles.ngoId}>ID: {ngo.id_code}</Text>
+          
+          <View style={styles.categoryContainer}>
+            {ngo.categories.map((category: string, index: number) => (
+              <View key={index} style={styles.categoryTag}>
+                <Text style={styles.categoryText}>{category}</Text>
+              </View>
+            ))}
+          </View>
+          
+          <View style={styles.locationContainer}>
+            <View style={styles.locationItem}>
+              <Feather name="map-pin" size={12} color="#164860" style={{ marginRight: 2 }} />
+              <Text style={[styles.locationText, styles.cityText]}>
+                City: {ngo.city}
+              </Text>
             </View>
-          ))}
-        </View>
-        
-        <View style={styles.locationContainer}>
-          <View style={styles.locationItem}>
-            <Feather name="map-pin" size={12} color="#164860" style={{ marginRight: 2 }} />
-            <Text style={[styles.locationText, styles.cityText]}>
-              City: {ngo.city}
-            </Text>
-          </View>
-          <View style={styles.locationItem}>
-            <Feather name="map-pin" size={12} color="#164860" style={{ marginRight: 2 }} />
-            <Text style={[styles.locationText, styles.cityText]}>
-              State: {ngo.state}
-            </Text>
+            {/* <View style={styles.locationItem}>
+              <Feather name="map-pin" size={12} color="#164860" style={{ marginRight: 2 }} />
+              <Text style={[styles.locationText, styles.cityText]}>
+                State: {ngo.state}
+              </Text>
+            </View> */}
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -278,7 +289,7 @@ const NGOScreen = () => {
                 <Text style={styles.filterLabel}>State</Text>
                 <TouchableOpacity style={styles.dropdownButton}>
                   <Text style={styles.dropdownText}>All States</Text>
-                  <MaterialCommunityIcons name="chevron-down" size={16} color="#164860" />
+                  <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
                 </TouchableOpacity>
               </View>
               
@@ -286,7 +297,7 @@ const NGOScreen = () => {
                 <Text style={styles.filterLabel}>City</Text>
                 <TouchableOpacity style={styles.dropdownButton}>
                   <Text style={styles.dropdownText}>All Cities</Text>
-                  <MaterialCommunityIcons name="chevron-down" size={16} color="#164860" />
+                  <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -296,7 +307,7 @@ const NGOScreen = () => {
                 <Text style={styles.filterLabel}>Categories</Text>
                 <TouchableOpacity style={styles.dropdownButton}>
                   <Text style={styles.dropdownText}>All Categories</Text>
-                  <MaterialCommunityIcons name="chevron-down" size={16} color="#164860" />
+                  <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
                 </TouchableOpacity>
               </View>
               
@@ -304,7 +315,7 @@ const NGOScreen = () => {
                 <Text style={styles.filterLabel}>Sort by</Text>
                 <TouchableOpacity style={styles.dropdownButton}>
                   <Text style={styles.dropdownText}>Rating</Text>
-                  <MaterialCommunityIcons name="chevron-down" size={16} color="#164860" />
+                  <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -637,45 +648,45 @@ const styles = StyleSheet.create({
     height: 40,
   },
   filterContainer: {
-  backgroundColor: '#fff',
-  borderRadius: 10,
-  padding: 16,
-  marginBottom: 16,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.1,
-  shadowRadius: 3,
-  elevation: 2,
-},
-filterRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginBottom: 12,
-},
-filterItem: {
-  flex: 1,
-  marginHorizontal: 4,
-},
-filterLabel: {
-  fontSize: 12,
-  color: '#666',
-  marginBottom: 4,
-},
-dropdownButton: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  backgroundColor: '#f5f5f5',
-  borderRadius: 8,
-  paddingHorizontal: 12,
-  paddingVertical: 12,
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-},
-dropdownText: {
-  fontSize: 14,
-  color: '#333',
-},
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 1 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 3,
+    // elevation: 2,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  filterItem: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  filterLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 3,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  dropdownText: {
+    fontSize: 12,
+    color: '#333',
+  },
 });
 
 export default NGOScreen;
