@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -13,6 +13,7 @@ import {
   Animated,
   ViewStyle,
   TextStyle,
+  PanResponder,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -21,90 +22,59 @@ import { useNavigation } from '@react-navigation/native';
 const SamarthyaNGO = () => {
   const [activeTab, setActiveTab] = useState('about');
   const [isExpanded, setIsExpanded] = useState(false);
-  const animation = useRef(new Animated.Value(0)).current;
+  const [fabPosition, setFabPosition] = useState({ x: Dimensions.get('window').width - 73, y: 275 });
+  const menuAnimation = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation();
   
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (_, gesture) => {
+        // Store initial position
+        setFabPosition(prev => ({
+          x: prev.x + gesture.x0,
+          y: prev.y + gesture.y0
+        }));
+      },
+      onPanResponderMove: (_, gesture) => {
+        const { width, height } = Dimensions.get('window');
+        const fabSize = 53;
+        
+        // Calculate new position
+        const newX = Math.max(0, Math.min(width - fabSize, gesture.moveX));
+        const newY = Math.max(0, Math.min(height - fabSize, gesture.moveY));
+        
+        setFabPosition({ x: newX, y: newY });
+      },
+      onPanResponderRelease: (_, gesture) => {
+        const { width, height } = Dimensions.get('window');
+        const fabSize = 53;
+        
+        // Calculate final position
+        const finalX = Math.max(0, Math.min(width - fabSize, gesture.moveX));
+        const finalY = Math.max(0, Math.min(height - fabSize, gesture.moveY));
+        
+        setFabPosition({ x: finalX, y: finalY });
+      },
+    })
+  ).current;
+
   const toggleMenu = () => {
     const toValue = isExpanded ? 0 : 1;
-    Animated.spring(animation, {
+    Animated.spring(menuAnimation, {
       toValue,
       friction: 8,
       tension: 40,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
     setIsExpanded(!isExpanded);
   };
 
-  const rotation = animation.interpolate({
+  const rotation = menuAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '45deg'],
   });
-
-  const firstButtonStyle = {
-    transform: [
-      { scale: animation },
-      {
-        translateX: animation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -50],
-        }),
-      },
-      {
-        translateY: animation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -20],
-        }),
-      },
-    ],
-    opacity: animation,
-  };
-
-  const secondButtonStyle = {
-    transform: [
-      { scale: animation },
-      {
-        translateX: animation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -104],
-        }),
-      },
-      {
-        translateY: animation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, 35],
-        }),
-      },
-    ],
-    opacity: animation,
-  };
-
-  const thirdButtonStyle = {
-    transform: [
-      { scale: animation },
-      {
-        translateX: animation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -63],
-        }),
-      },
-      {
-        translateY: animation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, 90],
-        }),
-      },
-    ],
-    opacity: animation,
-  };
-
-  const inlineFabContainer: ViewStyle = {
-    position: 'relative',
-    alignItems: 'flex-end' as const,
-    marginTop: 6,
-    height: 40,
-    marginBottom: 7,
-    marginRight: 9,
-  };
 
   const fab: ViewStyle = {
     backgroundColor: '#00BFA6',
@@ -113,22 +83,148 @@ const SamarthyaNGO = () => {
     borderRadius: 30,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
-    elevation: 5,
-    shadowColor: '#00BFA6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    elevation: 25,
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    left: fabPosition.x,
+    top: fabPosition.y,
+    zIndex: 1000,
   };
 
   const fabButton: ViewStyle = {
     position: 'absolute',
-    right: 0,
-    bottom: 40,
     alignItems: 'center' as const,
     zIndex: 1,
+    left: fabPosition.x,
+    top: fabPosition.y,
+  };
+
+  const getMenuButtonStyles = () => {
+    const { width, height } = Dimensions.get('window');
+    const fabSize = 53;
+    const menuButtonWidth = 120;
+    const menuButtonHeight = 40;
+    const radius = 80; // Reduced radius for the half-circle
+    
+    // Calculate if FAB is near edges
+    const isNearRight = fabPosition.x > width - (menuButtonWidth + fabSize + 20);
+    const isNearBottom = fabPosition.y > height - (menuButtonHeight * 3 + fabSize + 20);
+    const isNearTop = fabPosition.y < 150;
+    const isNearLeft = fabPosition.x < 150;
+    
+    // Determine the base angle for the half-circle based on FAB position
+    let baseAngle;
+    
+    if (isNearRight && isNearBottom) {
+      // Bottom-right corner: open to the left and up (180° arc from 90° to 270°)
+      baseAngle = Math.PI * 0.5; // 90°
+    } else if (isNearRight && isNearTop) {
+      // Top-right corner: open to the left and down (180° arc from 180° to 360°)
+      baseAngle = Math.PI * 0.75; // 135° - diagonal down-left
+    } else if (isNearLeft && isNearBottom) {
+      // Bottom-left corner: open to the right and up (180° arc from 270° to 90°)
+      baseAngle = Math.PI * 1.5; // 270°
+    } else if (isNearLeft && isNearTop) {
+      // Top-left corner: open to the right and down (180° arc from 0° to 180°)
+      baseAngle = Math.PI * 0.25; // 45° - diagonal down-right
+    } else if (isNearRight) {
+      // Right edge: open to the left (180° arc from 90° to 270°)
+      baseAngle = Math.PI * 0.5; // 90°
+    } else if (isNearLeft) {
+      // Left edge: open to the right (180° arc from 270° to 90°)
+      baseAngle = Math.PI * 1.5; // 270°
+    } else if (isNearBottom) {
+      // Bottom edge: open upward (180° arc from 0° to 180°)
+      baseAngle = 0; // 0°
+    } else if (isNearTop) {
+      // Top edge: open downward (180° arc from 180° to 360°)
+      baseAngle = Math.PI; // 180°
+    } else {
+      // Default (middle of screen): open to the right (180° arc from 270° to 90°)
+      baseAngle = Math.PI * 1.5; // 270°
+    }
+    
+    // For debugging
+    console.log('Position:', { x: fabPosition.x, y: fabPosition.y });
+    console.log('Near edges:', { right: isNearRight, top: isNearTop, left: isNearLeft, bottom: isNearBottom });
+    console.log('Base angle:', baseAngle);
+    
+    // Calculate angles for each button in the half-circle
+    // For 3 buttons in a 180° arc, we use smaller angle increments to reduce spacing
+    // First button: baseAngle
+    // Second button: baseAngle + 60° (π/3)
+    // Third button: baseAngle + 120° (2π/3)
+    
+    // First button - start of the arc
+    const firstButtonStyle = {
+      transform: [
+        { scale: menuAnimation },
+        {
+          translateX: menuAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, radius * Math.cos(baseAngle)],
+          }),
+        },
+        {
+          translateY: menuAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, radius * Math.sin(baseAngle)],
+          }),
+        },
+      ],
+      opacity: menuAnimation,
+    };
+
+    // Second button - middle of the arc (60° from start)
+    const secondButtonStyle = {
+      transform: [
+        { scale: menuAnimation },
+        {
+          translateX: menuAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, radius * Math.cos(baseAngle + Math.PI/3)],
+          }),
+        },
+        {
+          translateY: menuAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, radius * Math.sin(baseAngle + Math.PI/3)],
+          }),
+        },
+      ],
+      opacity: menuAnimation,
+    };
+
+    // Third button - end of the arc (120° from start)
+    const thirdButtonStyle = {
+      transform: [
+        { scale: menuAnimation },
+        {
+          translateX: menuAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, radius * Math.cos(baseAngle + Math.PI*2/3)],
+          }),
+        },
+        {
+          translateY: menuAnimation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, radius * Math.sin(baseAngle + Math.PI*2/3)],
+          }),
+        },
+      ],
+      opacity: menuAnimation,
+    };
+
+    return { firstButtonStyle, secondButtonStyle, thirdButtonStyle };
+  };
+
+  const inlineFabContainer: ViewStyle = {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'box-none',
+    zIndex: 999,
   };
 
   const actionButton: ViewStyle = {
@@ -197,36 +293,8 @@ const SamarthyaNGO = () => {
           <Text style={styles.ngoName}>Samarthya Kalyankari Sanstha</Text>
           <Text style={styles.ngoId}>NGO ID: MH-2017-0164886</Text>
           <Text style={styles.ngoEstablished}>Established: 2008</Text>
-          <View style={inlineFabContainer}>
-            <Animated.View style={[fabButton, thirdButtonStyle]}>
-              <TouchableOpacity style={outlineButton}>
-                <Icon name="phone" size={16} color="#00BFA6" style={styles.buttonIcon} />
-                <Text style={[styles.outlineButtonText, { color: '#00BFA6' }]}>Contact</Text>
-              </TouchableOpacity>
-            </Animated.View>
-            <Animated.View style={[fabButton, secondButtonStyle]}>
-              <TouchableOpacity style={outlineButton}>
-                <Icon name="share-alt" size={16} color="#00BFA6" style={styles.buttonIcon} />
-                <Text style={[styles.outlineButtonText, { color: '#00BFA6' }]}>Share</Text>
-              </TouchableOpacity>
-            </Animated.View>
-            <Animated.View style={[fabButton, firstButtonStyle]}>
-              <TouchableOpacity style={actionButton}>
-                <Icon name="heart" size={16} color="#fff" style={styles.buttonIcon} />
-                <Text style={[actionButtonText, { color: '#fff' }]}>Donate</Text>
-              </TouchableOpacity>
-            </Animated.View>
-            <TouchableOpacity 
-              style={fab}
-              onPress={toggleMenu}
-            >
-              <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-                <Icon name="plus" size={26} color="#fff" />
-              </Animated.View>
-            </TouchableOpacity>
-          </View>
         </View>
-        <View style={[styles.categoryContainer, { marginTop: 0 }]}>
+        <View style={styles.categoryContainer}>
           <Text style={styles.categoryText}>#Children</Text>
         </View>
         <View style={styles.ratingContainer}>
@@ -427,6 +495,48 @@ const SamarthyaNGO = () => {
         </View>
         {renderContent()}
       </ScrollView>
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'box-none' }}>
+        <Animated.View
+          style={[fab]}
+          {...panResponder.panHandlers}
+        >
+          <TouchableOpacity 
+            style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}
+            onPress={toggleMenu}
+          >
+            <Animated.View style={{ transform: [{ rotate: rotation }] }}>
+              <Icon name="plus" size={26} color="#fff" />
+            </Animated.View>
+          </TouchableOpacity>
+        </Animated.View>
+        <View style={inlineFabContainer}>
+          {(() => {
+            const { firstButtonStyle, secondButtonStyle, thirdButtonStyle } = getMenuButtonStyles();
+            return (
+              <>
+                <Animated.View style={[fabButton, thirdButtonStyle]}>
+                  <TouchableOpacity style={outlineButton}>
+                    <Icon name="phone" size={16} color="#00BFA6" style={styles.buttonIcon} />
+                    <Text style={[styles.outlineButtonText, { color: '#00BFA6' }]}>Contact</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[fabButton, secondButtonStyle]}>
+                  <TouchableOpacity style={outlineButton}>
+                    <Icon name="share-alt" size={16} color="#00BFA6" style={styles.buttonIcon} />
+                    <Text style={[styles.outlineButtonText, { color: '#00BFA6' }]}>Share</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[fabButton, firstButtonStyle]}>
+                  <TouchableOpacity style={actionButton}>
+                    <Icon name="heart" size={16} color="#fff" style={styles.buttonIcon} />
+                    <Text style={[actionButtonText, { color: '#fff' }]}>Donate</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </>
+            );
+          })()}
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -458,27 +568,31 @@ const styles = StyleSheet.create({
   },
   ngoInfoContainer: {
     flexDirection: 'row',
-    padding: 15,
+    padding: 16,
     backgroundColor: 'transparent',
+    marginTop:10
   },
   ngoInfoContent: {
     marginLeft: 15,
     flex: 1,
   },
   ngoInfoMain: {
-    marginBottom: -32,
+    marginBottom: 4,
   },
   ngoName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2E3E5C',
-    marginBottom: 6,
+    marginBottom: 4,
+
+    marginTop:5
   },
   ngoId: {
     fontSize: 12,
     color: '#64748B',
     marginTop: 3,
     marginBottom: 4,
+
   },
   ngoEstablished: {
     fontSize: 12,
@@ -491,7 +605,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    marginTop: 4,
     marginBottom: 8,
   },
   categoryText: {

@@ -34,7 +34,7 @@
 // export default NGOScreen; 
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -43,6 +43,7 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
@@ -51,6 +52,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Header from '../components/Header';
+import { apiService } from '../services/apiServices';
 
 // Sample data based on the images
 const CATEGORIES = [
@@ -62,7 +64,8 @@ const CATEGORIES = [
   { id: '6', name: 'Women Empowerment', selected: false },
 ];
 
-const NGO_DATA = [
+// Fallback data in case API fails
+const FALLBACK_NGO_DATA = [
   {
     id: '1',
     name: 'Samarthya Kalyankari Sanstha',
@@ -159,8 +162,21 @@ const NGO_DATA = [
 const NGOCard = ({ ngo }: { ngo: any }) => {
   const navigation = useNavigation();
   
+  // Map API response fields to our UI
+  const id = ngo._id || ngo.id || '';
+  const name = ngo.ngo_name || ngo.name || 'Unknown NGO';
+  const rating = ngo.rating || '4.0';
+  const idCode = ngo.ngo_id || ngo.id_code || 'N/A';
+  const categories = Array.isArray(ngo.ngo_category) 
+    ? ngo.ngo_category 
+    : (Array.isArray(ngo.categories) ? ngo.categories : ['General']);
+  const city = ngo.ngo_city || ngo.city || 'Unknown Location';
+  const state = ngo.ngo_state || ngo.state || '';
+  const imageUrl = ngo.ngo_banner_image || ngo.bannerImage || ngo.imageUrl || 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741757240/samarthya-Kalyankari_quxzvw.webp';
+  const verified = ngo.isSponsored !== undefined ? ngo.isSponsored : true;
+  
   const handleNGOPress = () => {
-    if (ngo.name === 'Samarthya Kalyankari Sanstha') {
+    if (name === 'Samarthya Kalyankari Sanstha') {
       navigation.navigate('SamarthyaNGO' as never);
     }
   };
@@ -170,40 +186,42 @@ const NGOCard = ({ ngo }: { ngo: any }) => {
       <View style={styles.ngoCard}>
         <View style={styles.cardImageContainer}>
           <Image 
-            source={{ uri: ngo.imageUrl }} 
+            source={{ uri: imageUrl }} 
             style={styles.cardImage} 
           />
-          <Image 
-            source={{ uri: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741763259/verified-badge-removebg-preview_ekji2j.png' }}
-            style={styles.verifiedBadge}
-          />
+          {verified && (
+            <Image 
+              source={{ uri: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741763259/verified-badge-removebg-preview_ekji2j.png' }}
+              style={styles.verifiedBadge}
+            />
+          )}
         </View>
         
         <View style={styles.cardContent}>
-          <Text style={styles.ngoName}>{ngo.name}</Text>
+          <Text style={styles.ngoName}>{name}</Text>
           
           <View style={styles.ratingContainer}>
             {Array(5).fill(0).map((_, i) => (
               <FontAwesome 
                 key={i} 
                 name={
-                  i < Math.floor(ngo.rating)
+                  i < Math.floor(parseFloat(rating))
                     ? "star"
-                    : i === Math.floor(ngo.rating) && ngo.rating % 1 !== 0
+                    : i === Math.floor(parseFloat(rating)) && parseFloat(rating) % 1 !== 0
                     ? "star-half-o"
                     : "star-o"
                 } 
                 size={14} 
-                color={i < Math.ceil(ngo.rating) ? "#164860" : "#BDBDBD"} 
+                color={i < Math.ceil(parseFloat(rating)) ? "#164860" : "#BDBDBD"} 
                 style={{ marginRight: 2 }}
               />
             ))}
           </View>
           
-          <Text style={styles.ngoId}>ID: {ngo.id_code}</Text>
+          <Text style={styles.ngoId}>ID: {idCode}</Text>
           
           <View style={styles.categoryContainer}>
-            {ngo.categories.map((category: string, index: number) => (
+            {categories.map((category: string, index: number) => (
               <View key={index} style={styles.categoryTag}>
                 <Text style={styles.categoryText}>{category}</Text>
               </View>
@@ -214,15 +232,9 @@ const NGOCard = ({ ngo }: { ngo: any }) => {
             <View style={styles.locationItem}>
               <Feather name="map-pin" size={12} color="#164860" style={{ marginRight: 2 }} />
               <Text style={[styles.locationText, styles.cityText]}>
-                City: {ngo.city}
+                {city}{`, `}{state}
               </Text>
             </View>
-            {/* <View style={styles.locationItem}>
-              <Feather name="map-pin" size={12} color="#164860" style={{ marginRight: 2 }} />
-              <Text style={[styles.locationText, styles.cityText]}>
-                State: {ngo.state}
-              </Text>
-            </View> */}
           </View>
         </View>
       </View>
@@ -234,7 +246,50 @@ const NGOScreen = () => {
   const [searchText, setSearchText] = useState('');
   const [categories, setCategories] = useState(CATEGORIES);
   const [showFilters, setShowFilters] = useState(false);
+  const [ngoData, setNgoData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
+  useEffect(() => {
+    fetchNGOs();
+  }, []);
+
+  const fetchNGOs = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getAllNGOs();
+      
+      // The API returns an object with a 'ngos' array
+      if (response && response.ngos && Array.isArray(response.ngos)) {
+        console.log('Successfully fetched NGOs:', response.ngos.length);
+        
+        // Filter out NGOs with specific IDs
+        const excludedIds = [
+          "66f12cd7711393252365ee35",
+          "6744205794062f70be27a009",
+          "66f113b6711393252365ee33"
+        ];
+        
+        const filteredNgos = response.ngos.filter((ngo: any) => 
+          !excludedIds.includes(ngo._id)
+        );
+        
+        setNgoData(filteredNgos);
+        setError(null);
+      } else {
+        console.error('API response does not contain ngos array:', response);
+        setError('Invalid API response format. Using fallback data.');
+        setNgoData(FALLBACK_NGO_DATA);
+      }
+    } catch (err) {
+      console.error('Failed to fetch NGOs:', err);
+      setError('Failed to load NGOs. Using fallback data.');
+      setNgoData(FALLBACK_NGO_DATA);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleCategory = (id: string) => {
     setCategories(
       categories.map(cat => ({
@@ -380,9 +435,37 @@ const NGOScreen = () => {
         <View style={styles.allNGOsContainer}>
           <Text style={styles.sectionTitle}>All NGOs</Text>
           
-          {NGO_DATA.map(ngo => (
-            <NGOCard key={ngo.id} ngo={ngo} />
-          ))}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#164860" />
+              <Text style={styles.loadingText}>Loading NGOs...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : ngoData.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No NGOs found</Text>
+            </View>
+          ) : (
+            <>
+              {(() => {
+                try {
+                  return ngoData.map(ngo => (
+                    <NGOCard key={ngo._id || ngo.id || Math.random().toString()} ngo={ngo} />
+                  ));
+                } catch (err) {
+                  console.error('Error rendering NGO cards:', err);
+                  return (
+                    <View style={styles.errorContainer}>
+                      <Text style={styles.errorText}>Error displaying NGOs. Please try again.</Text>
+                    </View>
+                  );
+                }
+              })()}
+            </>
+          )}
         </View>
       </ScrollView>
       
@@ -686,6 +769,33 @@ const styles = StyleSheet.create({
   dropdownText: {
     fontSize: 12,
     color: '#333',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 16,
+  },
+  errorContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#ffeeee',
+    borderRadius: 10,
+  },
+  errorText: {
+    color: '#cc0000',
+    fontSize: 16,
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
   },
 });
 
