@@ -14,17 +14,47 @@ import {
   ViewStyle,
   TextStyle,
   PanResponder,
+  ActivityIndicator,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { apiService } from '../services/apiServices';
 
-const SamarthyaNGO = () => {
+const NGODetailScreen = ({ ngoId }: { ngoId?: string }) => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  
+  // Get ngoId from props or route params
+  const ngoIdToUse = ngoId || (route.params as any)?.ngoId || "66c47659f618b819aabe91b4"; // Default to Samarthya if not provided
+  
   const [activeTab, setActiveTab] = useState('about');
   const [isExpanded, setIsExpanded] = useState(false);
   const [fabPosition, setFabPosition] = useState({ x: Dimensions.get('window').width - 73, y: 275 });
   const menuAnimation = useRef(new Animated.Value(0)).current;
-  const navigation = useNavigation();
+  
+  // Add state for API data
+  const [ngoData, setNgoData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    fetchNGOData();
+  }, [ngoIdToUse]); // Refetch when ngoId changes
+  
+  const fetchNGOData = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getNGOById(ngoIdToUse);
+      setNgoData(data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch NGO data:', err);
+      setError('Failed to load NGO data');
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const panResponder = useRef(
     PanResponder.create({
@@ -272,7 +302,7 @@ const SamarthyaNGO = () => {
         <Icon name="arrow-left" size={20} color="#fff" />
       </TouchableOpacity>
       <Image
-        source={{ uri: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741847550/samarthyaidimage_qyu0eb.webp' }}
+        source={{ uri: ngoData?.ngo_banner_image || 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741847550/samarthyaidimage_qyu0eb.webp' }}
         style={styles.bannerImage}
         resizeMode="cover"
       />
@@ -283,19 +313,21 @@ const SamarthyaNGO = () => {
     <View style={styles.ngoInfoContainer}>
       <View style={styles.logoContainer}>
         <Image
-          source={{ uri: 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741847678/samarthya_opy14x.jpg' }}
+          source={{ uri: ngoData?.ngo_profile_photo || 'https://res.cloudinary.com/dpyficcwm/image/upload/v1741847678/samarthya_opy14x.jpg' }}
           style={styles.logoImage}
           resizeMode="contain"
         />
       </View>
       <View style={styles.ngoInfoContent}>
         <View style={styles.ngoInfoMain}>
-          <Text style={styles.ngoName}>Samarthya Kalyankari Sanstha</Text>
-          <Text style={styles.ngoId}>NGO ID: MH-2017-0164886</Text>
-          <Text style={styles.ngoEstablished}>Established: 2008</Text>
+          <Text style={styles.ngoName}>{ngoData?.ngo_name || 'Samarthya Kalyankari Sanstha'}</Text>
+          <Text style={styles.ngoId}>NGO ID: {ngoData?.ngo_id || 'MH-2017-0164886'}</Text>
+          <Text style={styles.ngoEstablished}>Established: {ngoData?.ngo_established || '2008'}</Text>
         </View>
         <View style={styles.categoryContainer}>
-          <Text style={styles.categoryText}>#Children</Text>
+          <Text style={styles.categoryText}>
+            #{ngoData?.ngo_category?.[0] || 'Children'}
+          </Text>
         </View>
         <View style={styles.ratingContainer}>
           <Icon name="star" size={16} color="#164860" />
@@ -303,7 +335,7 @@ const SamarthyaNGO = () => {
           <Icon name="star" size={16} color="#164860" />
           <Icon name="star" size={16} color="#164860" />
           <Icon name="star-half-o" size={16} color="#164860" />
-          <Text style={styles.ratingText}> (4.5)</Text>
+          <Text style={styles.ratingText}> ({ngoData?.rating || '4.5'})</Text>
         </View>
       </View>
     </View>
@@ -345,14 +377,8 @@ const SamarthyaNGO = () => {
     <View style={styles.contentContainer}>
       <Text style={styles.sectionTitle}>About NGO</Text>
       <Text style={styles.aboutText}>
-        Samarthya is a development organization, working with marginalized communities 
-        on access to quality primary education, strengthening and promoting community 
-        based organisations, youth leadership and development, women and girls 
-        empowerment and disaster risk reduction. It represents the conviction that every 
-        individual is entitled to live in security, dignity and peace. Our existence is rooted in 
-        our commitment to promote a democratic society, and enable marginalized groups 
-        to access human rights. Samarthya was founded in 2008 under Bombay Public Trust 
-        Act—1950 and Societies Registration Act—1860.
+        {ngoData?.ngo_about || 
+          'Samarthya is a development organization, working with marginalized communities on access to quality primary education, strengthening and promoting community based organisations, youth leadership and development, women and girls empowerment and disaster risk reduction. It represents the conviction that every individual is entitled to live in security, dignity and peace. Our existence is rooted in our commitment to promote a democratic society, and enable marginalized groups to access human rights. Samarthya was founded in 2008 under Bombay Public Trust Act—1950 and Societies Registration Act—1860.'}
       </Text>
     </View>
   );
@@ -405,7 +431,7 @@ const SamarthyaNGO = () => {
         <Icon name="envelope" size={18} color="#64748B" style={styles.contactIcon} />
         <View style={styles.contactInfo}>
           <Text style={styles.contactLabel}>Email:</Text>
-          <Text style={styles.contactValue}>maha.samarthya@gmail.com</Text>
+          <Text style={styles.contactValue}>{ngoData?.ngo_email || 'maha.samarthya@gmail.com'}</Text>
         </View>
       </View>
       
@@ -413,7 +439,9 @@ const SamarthyaNGO = () => {
         <Icon name="user" size={18} color="#64748B" style={styles.contactIcon} />
         <View style={styles.contactInfo}>
           <Text style={styles.contactLabel}>Authorized Person:</Text>
-          <Text style={[styles.contactValue,styles.contactValueperson]}>Ranjita Pawar</Text>
+          <Text style={[styles.contactValue,styles.contactValueperson]}>
+            {ngoData?.ngo_authorised_person || 'Ranjita Pawar'}
+          </Text>
         </View>
       </View>
       
@@ -423,9 +451,9 @@ const SamarthyaNGO = () => {
           <Text style={styles.contactLabel}>Phone:</Text>
           <Text 
             style={[styles.contactValue, styles.phoneLink]}
-            onPress={() => Linking.openURL('tel:9765363734')}
+            onPress={() => Linking.openURL(`tel:${ngoData?.ngo_phone || '9765363734'}`)}
           >
-            9765363734
+            {ngoData?.ngo_phone || '9765363734'}
           </Text>
         </View>
       </View>
@@ -436,36 +464,60 @@ const SamarthyaNGO = () => {
           <Text style={styles.contactLabel}>Website:</Text>
           <Text 
             style={[styles.contactValue, styles.websiteLink]}
-            onPress={() => openLink('https://www.mahasamarthya.org/')}
+            onPress={() => openLink(ngoData?.ngo_website || 'https://www.mahasamarthya.org/')}
           >
-            https://www.mahasamarthya.org/
+            {ngoData?.ngo_website || 'https://www.mahasamarthya.org/'}
           </Text>
         </View>
       </View>
       
       <View style={styles.socialIcons}>
-        <TouchableOpacity style={styles.socialIcon}>
-          <Icon name="youtube" size={24} color="#FF0000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.socialIcon}>
-          <Icon name="facebook" size={24} color="#3b5998" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.socialIcon}>
-          <Icon name="linkedin" size={24} color="#0077B5" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.socialIcon}>
-          <Icon name="twitter" size={24} color="#1DA1F2" />
-        </TouchableOpacity>
+        {ngoData?.socialMedia?.youtube && (
+          <TouchableOpacity 
+            style={styles.socialIcon}
+            onPress={() => openLink(ngoData.socialMedia.youtube)}
+          >
+            <Icon name="youtube" size={24} color="#FF0000" />
+          </TouchableOpacity>
+        )}
+        {ngoData?.socialMedia?.facebook && (
+          <TouchableOpacity 
+            style={styles.socialIcon}
+            onPress={() => openLink(ngoData.socialMedia.facebook)}
+          >
+            <Icon name="facebook" size={24} color="#3b5998" />
+          </TouchableOpacity>
+        )}
+        {ngoData?.socialMedia?.linkedin && (
+          <TouchableOpacity 
+            style={styles.socialIcon}
+            onPress={() => openLink(ngoData.socialMedia.linkedin)}
+          >
+            <Icon name="linkedin" size={24} color="#0077B5" />
+          </TouchableOpacity>
+        )}
+        {ngoData?.socialMedia?.twitter && (
+          <TouchableOpacity 
+            style={styles.socialIcon}
+            onPress={() => openLink(ngoData.socialMedia.twitter)}
+          >
+            <Icon name="twitter" size={24} color="#1DA1F2" />
+          </TouchableOpacity>
+        )}
       </View>
       
       <Text style={styles.locationTitle}>Location</Text>
       <Text style={styles.locationText}>
-        At Sardarnagar Post Kader Tal Omerga, Dist. Osmanabad, Maharashtra, 413606 India
+        {ngoData?.ngo_location || 'At Sardarnagar Post Kader Tal Omerga, Dist. Osmanabad, Maharashtra, 413606 India'}
       </Text>
       
       <View style={styles.mapContainer}>
         <WebView
-          source={{ uri: 'https://www.openstreetmap.org/export/embed.html?bbox=75.9,18.2,76.1,18.4&layer=mapnik&marker=18.3,76.0' }}
+          source={{ 
+            uri: ngoData?.ngo_position 
+              ? `https://www.openstreetmap.org/export/embed.html?bbox=${ngoData.ngo_position[1]-0.1},${ngoData.ngo_position[0]-0.1},${ngoData.ngo_position[1]+0.1},${ngoData.ngo_position[0]+0.1}&layer=mapnik&marker=${ngoData.ngo_position[0]},${ngoData.ngo_position[1]}`
+              : 'https://www.openstreetmap.org/export/embed.html?bbox=75.9,18.2,76.1,18.4&layer=mapnik&marker=18.3,76.0'
+          }}
           style={styles.map}
         />
       </View>
@@ -484,6 +536,27 @@ const SamarthyaNGO = () => {
         return renderAboutContent();
     }
   };
+  
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#00BFA6" />
+        <Text style={styles.loadingText}>Loading NGO details...</Text>
+      </SafeAreaView>
+    );
+  }
+  
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.container, styles.errorContainer]}>
+        <Icon name="exclamation-circle" size={50} color="#FF6B6B" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchNGOData}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
   
   return (
     <SafeAreaView style={styles.container}>
@@ -834,6 +907,37 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#64748B',
+    fontSize: 16,
+  },
+  errorContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    color: '#FF6B6B',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#00BFA6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 });
 
-export default SamarthyaNGO;
+export default NGODetailScreen;

@@ -9,7 +9,7 @@ import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import OtpVerification from './screens/OtpVerification';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import BottomTabs from './components/BottomTabs';
-import SamarthyaNGO from './components/SamarthyaNGO';
+import NGODetailScreen from './components/NGODetailScreen';
 
 const Stack = createStackNavigator();
 
@@ -68,9 +68,16 @@ const App = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="SamarthyaNGO"
-          component={SamarthyaNGO}
+          name="NGODetailScreen"
+          component={NGODetailScreen}
           options={{ headerShown: false }}
+        />
+        {/* Keep the SamarthyaNGO screen for backward compatibility */}
+        <Stack.Screen
+          name="SamarthyaNGO"
+          component={NGODetailScreen}
+          options={{ headerShown: false }}
+          initialParams={{ ngoId: "66c47659f618b819aabe91b4" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

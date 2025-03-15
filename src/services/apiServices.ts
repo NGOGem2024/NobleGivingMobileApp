@@ -27,6 +27,29 @@ const apiService = {
       console.error('Error fetching NGOs:', error);
       throw error;
     }
+  },
+  
+  getNGOById: async (ngoId: string) => {
+    try {
+      // First fetch all NGOs
+      const response = await api.get(EndPoint.get_all_ngo);
+      
+      // Find the specific NGO by ID
+      if (response.data && response.data.ngos && Array.isArray(response.data.ngos)) {
+        const ngo = response.data.ngos.find((ngo: any) => ngo._id === ngoId || ngo.ngo_id === ngoId);
+        
+        if (ngo) {
+          return ngo;
+        } else {
+          throw new Error('NGO not found');
+        }
+      } else {
+        throw new Error('Invalid API response format');
+      }
+    } catch (error) {
+      console.error('Error fetching NGO by ID:', error);
+      throw error;
+    }
   }
 };
 

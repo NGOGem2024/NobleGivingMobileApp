@@ -176,9 +176,9 @@ const NGOCard = ({ ngo }: { ngo: any }) => {
   const verified = ngo.isSponsored !== undefined ? ngo.isSponsored : true;
   
   const handleNGOPress = () => {
-    if (name === 'Samarthya Kalyankari Sanstha') {
-      navigation.navigate('SamarthyaNGO' as never);
-    }
+    // Navigate to the NGO detail screen with the NGO ID
+    // @ts-ignore - Ignoring type error for navigation
+    navigation.navigate('NGODetailScreen', { ngoId: id });
   };
 
   return (
