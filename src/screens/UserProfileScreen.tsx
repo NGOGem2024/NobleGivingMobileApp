@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, Modal, Animated, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Dimensions, Animated, ActivityIndicator, RefreshControl, TouchableWithoutFeedback } from 'react-native';
 import Header from '../components/Header';
 import Icon from 'react-native-vector-icons/Feather';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,6 +10,8 @@ const { width } = Dimensions.get('window');
 
 const UserProfileScreen = () => {
   const navigation = useNavigation();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollPositionRef = useRef(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [scaleAnim] = useState(new Animated.Value(0));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -18,6 +20,7 @@ const UserProfileScreen = () => {
 
   const handleLogoutPress = () => {
     setShowLogoutModal(true);
+    scaleAnim.setValue(0);
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,
@@ -31,7 +34,9 @@ const UserProfileScreen = () => {
       toValue: 0,
       duration: 200,
       useNativeDriver: true
-    }).start(() => setShowLogoutModal(false));
+    }).start(() => {
+      setShowLogoutModal(false);
+    });
   };
 
   const handleLogout = async () => {
@@ -79,24 +84,46 @@ const UserProfileScreen = () => {
     setPressedButton(null);
   };
 
+  const handleScroll = (event: any) => {
+    // Save the current scroll position
+    scrollPositionRef.current = event.nativeEvent.contentOffset.y;
+  };
+
+  const restoreScrollPosition = () => {
+    // Restore the scroll position after a short delay to ensure content is rendered
+    setTimeout(() => {
+      if (scrollViewRef.current && scrollPositionRef.current > 0) {
+        scrollViewRef.current.scrollTo({ y: scrollPositionRef.current, animated: false });
+      }
+    }, 100);
+  };
+
   return (
     <View style={styles.container}>
       <Header />
       <ScrollView 
+        ref={scrollViewRef}
         style={styles.content} 
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 10
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#1E6B91"
-            colors={['#1E6B91', '#2988B5']}
+            tintColor="#164860"
+            colors={['#164860']}
           />
         }
         contentContainerStyle={{ paddingBottom: 70 }}
+        onContentSizeChange={restoreScrollPosition}
       >
         <LinearGradient
-          colors={['#1E6B91', '#2988B5']}
+          colors={['#164860', '#164860']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientHeader}
@@ -144,7 +171,7 @@ const UserProfileScreen = () => {
                 onPressOut={handlePressOut}
               >
                 <LinearGradient
-                  colors={['#1E6B91', '#2988B5']}
+                  colors={['#164860', '#164860']}
                   style={[styles.actionGradient, pressedButton === 'donate' && styles.actionGradientPressed]}
                 >
                   <Icon name="heart" size={24} color="#fff" />
@@ -158,7 +185,7 @@ const UserProfileScreen = () => {
                 onPressOut={handlePressOut}
               >
                 <LinearGradient
-                  colors={['#1E6B91', '#2988B5']}
+                  colors={['#164860', '#164860']}
                   style={[styles.actionGradient, pressedButton === 'history' && styles.actionGradientPressed]}
                 >
                   <Icon name="clock" size={24} color="#fff" />
@@ -172,7 +199,7 @@ const UserProfileScreen = () => {
                 onPressOut={handlePressOut}
               >
                 <LinearGradient
-                  colors={['#1E6B91', '#2988B5']}
+                  colors={['#164860', '#164860']}
                   style={[styles.actionGradient, pressedButton === 'favorites' && styles.actionGradientPressed]}
                 >
                   <Icon name="star" size={24} color="#fff" />
@@ -188,7 +215,7 @@ const UserProfileScreen = () => {
               <TouchableOpacity style={styles.settingsItem}>
                 <View style={styles.settingsIconContainer}>
                   <LinearGradient
-                    colors={['#1E6B91', '#2988B5']}
+                    colors={['#164860', '#164860']}
                     style={styles.settingsIconGradient}
                   >
                     <Icon name="user" size={22} color="#fff" />
@@ -204,7 +231,7 @@ const UserProfileScreen = () => {
               <TouchableOpacity style={styles.settingsItem}>
                 <View style={styles.settingsIconContainer}>
                   <LinearGradient
-                    colors={['#1E6B91', '#2988B5']}
+                    colors={['#164860', '#164860']}
                     style={styles.settingsIconGradient}
                   >
                     <Icon name="bell" size={22} color="#fff" />
@@ -220,7 +247,7 @@ const UserProfileScreen = () => {
               <TouchableOpacity style={styles.settingsItem}>
                 <View style={styles.settingsIconContainer}>
                   <LinearGradient
-                    colors={['#1E6B91', '#2988B5']}
+                    colors={['#164860', '#164860']}
                     style={styles.settingsIconGradient}
                   >
                     <Icon name="lock" size={22} color="#fff" />
@@ -256,26 +283,20 @@ const UserProfileScreen = () => {
       </ScrollView>
 
       {/* Logout Modal */}
-      <Modal
-        visible={showLogoutModal}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCloseModal}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={handleCloseModal}
+      {showLogoutModal && (
+        <View 
+          style={styles.modalContainer}
+          pointerEvents="box-none"
         >
+          <TouchableWithoutFeedback onPress={handleCloseModal}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+          
           <Animated.View 
             style={[
               styles.modalContent,
               {
-                transform: [
-                  {
-                    scale: scaleAnim
-                  }
-                ]
+                transform: [{ scale: scaleAnim }]
               }
             ]}
           >
@@ -309,8 +330,8 @@ const UserProfileScreen = () => {
               </TouchableOpacity>
             </View>
           </Animated.View>
-        </TouchableOpacity>
-      </Modal>
+        </View>
+      )}
     </View>
   );
 };
@@ -489,11 +510,24 @@ const styles = StyleSheet.create({
   logoutSubtext: {
     color: '#FF6B60',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  modalContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
+    zIndex: 1000,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
     backgroundColor: '#fff',
@@ -505,6 +539,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+    zIndex: 1001,
   },
   modalHeader: {
     padding: 20,

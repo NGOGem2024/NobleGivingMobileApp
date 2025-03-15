@@ -1,40 +1,4 @@
-// import React from 'react';
-// import { View, Text, StyleSheet, ScrollView } from 'react-native';
-// import Header from '../components/Header';
-
-// const NGOScreen = () => {
-//   return (
-//     <View style={styles.container}>
-//       <Header />
-//       <ScrollView style={styles.content}>
-//         <Text style={styles.title}>NGO Partners</Text>
-//         {/* NGO list will be added here */}
-//       </ScrollView>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//   },
-//   content: {
-//     flex: 1,
-//     padding: 16,
-//   },
-//   title: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     color: '#164860',
-//     marginBottom: 16,
-//   },
-// });
-
-// export default NGOScreen; 
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -44,6 +8,7 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
@@ -51,8 +16,17 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { MultiSelect } from 'react-native-element-dropdown';
+import LinearGradient from 'react-native-linear-gradient';
 import Header from '../components/Header';
 import { apiService } from '../services/apiServices';
+
+// App colors
+const COLORS = {
+  primary: '#164860',
+  secondary: '#00BFA6',
+  placeholder: '#8a9caa',
+};
 
 // Sample data based on the images
 const CATEGORIES = [
@@ -62,6 +36,12 @@ const CATEGORIES = [
   { id: '4', name: 'Disaster Relief', selected: false },
   { id: '5', name: 'Children', selected: false },
   { id: '6', name: 'Women Empowerment', selected: false },
+];
+
+// Search placeholder options that will cycle
+const SEARCH_PLACEHOLDERS = [
+  'Search by "NGO Name"',
+  'Search by "NGO ID"',
 ];
 
 // Fallback data in case API fails
@@ -182,7 +162,7 @@ const NGOCard = ({ ngo }: { ngo: any }) => {
   };
 
   return (
-    <TouchableOpacity onPress={handleNGOPress}>
+    <TouchableOpacity onPress={handleNGOPress} style={styles.cardTouchable}>
       <View style={styles.ngoCard}>
         <View style={styles.cardImageContainer}>
           <Image 
@@ -242,7 +222,59 @@ const NGOCard = ({ ngo }: { ngo: any }) => {
   );
 };
 
+// Custom placeholder component to render highlighted text
+const renderPlaceholder = (placeholder: string) => {
+  // Split the text by the quoted part
+  const parts = placeholder.split(/"([^"]*)"/)
+  
+  if (parts.length === 3) {
+    return (
+      <View style={{ flexDirection: 'row' }}>
+        <Text style={{ color: COLORS.placeholder }}>{parts[0]}</Text>
+        <Text style={{ 
+          color: COLORS.placeholder,
+          fontWeight: 'bold',
+        }}>"{parts[1]}"</Text>
+      </View>
+    )
+  }
+  
+  return <Text style={{ color: COLORS.placeholder }}>{placeholder}</Text>
+}
+
+// Animated pattern dot component
+const PatternDot = ({ style }: { style: any }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.2,
+          duration: 2000 + Math.random() * 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 2000 + Math.random() * 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+  
+  return (
+    <Animated.View 
+      style={[
+        style, 
+        { transform: [{ scale: scaleAnim }] }
+      ]} 
+    />
+  );
+};
+
 const NGOScreen = () => {
+  const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
   const [categories, setCategories] = useState(CATEGORIES);
   const [showFilters, setShowFilters] = useState(false);
@@ -250,8 +282,84 @@ const NGOScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Add state for placeholder text
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [searchPlaceholder, setSearchPlaceholder] = useState(SEARCH_PLACEHOLDERS[0]);
+  
+  // Add state for dropdown menus
+  const [showStateDropdown, setShowStateDropdown] = useState(false);
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  
+  // Add state for selected values
+  const [selectedState, setSelectedState] = useState('All States');
+  const [selectedCity, setSelectedCity] = useState('All Cities');
+  const [selectedSort, setSelectedSort] = useState('Rating');
+  
+  // Replace single category selection with multi-select
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // Add state to control category dropdown visibility
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  
+  // Extract unique states, cities, and categories from NGO data
+  const states = ['All States', ...Array.from(new Set(ngoData.map(ngo => ngo.ngo_state || ngo.state || '').filter(Boolean)))];
+  const cities = ['All Cities', ...Array.from(new Set(ngoData.map(ngo => ngo.ngo_city || ngo.city || '').filter(Boolean)))];
+  
+  // Get all unique categories from NGO data and format for dropdown
+  const allCategoriesData = ngoData.reduce((acc: {label: string, value: string}[], ngo) => {
+    const ngoCategories = ngo.ngo_category || ngo.categories || [];
+    if (Array.isArray(ngoCategories)) {
+      ngoCategories.forEach(category => {
+        if (!acc.some(item => item.value === category)) {
+          acc.push({ label: category, value: category });
+        }
+      });
+    }
+    return acc;
+  }, []);
+  
+  // Sort options - explicitly set Rating first, Name second
+  const sortOptions = ['Rating', 'Name'];
+  
+  // Add animation value for filter button
+  const filterButtonScale = useRef(new Animated.Value(1)).current;
+  
+  // Add animation for title icon
+  const titleIconAnim = useRef(new Animated.Value(1)).current;
+  
+  // Animate title icon on component mount
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(titleIconAnim, {
+          toValue: 1.2,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(titleIconAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
   useEffect(() => {
     fetchNGOs();
+  }, []);
+  
+  // Add useEffect for cycling placeholders
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prevIndex) => {
+        const newIndex = (prevIndex + 1) % SEARCH_PLACEHOLDERS.length;
+        setSearchPlaceholder(SEARCH_PLACEHOLDERS[newIndex]);
+        return newIndex;
+      });
+    }, 4500); // Change placeholder every 3 seconds
+
+    return () => clearInterval(interval); // Clean up on unmount
   }, []);
 
   const fetchNGOs = async () => {
@@ -299,8 +407,220 @@ const NGOScreen = () => {
     );
   };
 
+  // Calculate active filter count
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (selectedState !== 'All States') count++;
+    if (selectedCity !== 'All Cities') count++;
+    count += selectedCategories.length;
+    return count;
+  };
+
+  // Toggle filters with animation
   const toggleFilters = () => {
+    // Animate button press
+    Animated.sequence([
+      Animated.timing(filterButtonScale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(filterButtonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    // Toggle filters state
     setShowFilters(!showFilters);
+  };
+  
+  // Toggle dropdown visibility functions
+  const toggleStateDropdown = () => {
+    setShowStateDropdown(!showStateDropdown);
+    setShowCityDropdown(false);
+    setShowSortDropdown(false);
+  };
+  
+  const toggleCityDropdown = () => {
+    setShowCityDropdown(!showCityDropdown);
+    setShowStateDropdown(false);
+    setShowSortDropdown(false);
+  };
+  
+  const toggleSortDropdown = () => {
+    setShowSortDropdown(!showSortDropdown);
+    setShowStateDropdown(false);
+    setShowCityDropdown(false);
+  };
+  
+  // Toggle category dropdown visibility
+  const toggleCategoryDropdown = () => {
+    setShowCategoryDropdown(!showCategoryDropdown);
+    setShowStateDropdown(false);
+    setShowCityDropdown(false);
+    setShowSortDropdown(false);
+  };
+  
+  // Selection handlers
+  const handleStateSelect = (state: string) => {
+    setSelectedState(state);
+    setShowStateDropdown(false);
+  };
+  
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city);
+    setShowCityDropdown(false);
+  };
+  
+  const handleSortSelect = (sort: string) => {
+    setSelectedSort(sort);
+    setShowSortDropdown(false);
+  };
+  
+  // Handle category selection - add to selected categories and close dropdown
+  const handleCategorySelect = (category: string) => {
+    if (!selectedCategories.includes(category)) {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+    setShowCategoryDropdown(false);
+  };
+  
+  // Dropdown menu component
+  const DropdownMenu = ({ 
+    options, 
+    onSelect, 
+    visible,
+    onClose
+  }: { 
+    options: string[], 
+    onSelect: (option: string) => void, 
+    visible: boolean,
+    onClose: () => void
+  }) => {
+    if (!visible) return null;
+    
+    return (
+      <>
+        <TouchableOpacity 
+          style={styles.dropdownBackdrop} 
+          onPress={onClose}
+          activeOpacity={1}
+        />
+        <View style={styles.dropdownMenu}>
+          <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+            {options.map((option, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.dropdownItem}
+                onPress={() => onSelect(option)}
+              >
+                <Text style={styles.dropdownItemText}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </>
+    );
+  };
+
+  // Clear all selected categories
+  const clearAllCategories = () => {
+    setSelectedCategories([]);
+  };
+  
+  // Get filtered categories for dropdown (exclude already selected ones)
+  const getFilteredCategories = () => {
+    return allCategoriesData
+      .filter(item => !selectedCategories.includes(item.value))
+      .map(item => item.value);
+  };
+  
+  // Render selected category tags
+  const renderSelectedCategories = () => {
+    return (
+      <View style={styles.selectedCategoriesContainer}>
+        {selectedCategories.map((category, index) => (
+          <View key={index} style={styles.selectedItem}>
+            <Text style={styles.selectedItemText}>{category}</Text>
+            <TouchableOpacity onPress={() => {
+              const newCategories = [...selectedCategories];
+              newCategories.splice(index, 1);
+              setSelectedCategories(newCategories);
+            }}>
+              <AntDesign name="close" size={14} color="#164860" />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+    );
+  };
+  
+  // Add a function to filter NGOs based on selected filters
+  const getFilteredNGOs = () => {
+    return ngoData.filter(ngo => {
+      const ngoState = ngo.ngo_state || ngo.state || '';
+      const ngoCity = ngo.ngo_city || ngo.city || '';
+      const ngoCategories = ngo.ngo_category || ngo.categories || [];
+      const ngoName = ngo.ngo_name || ngo.name || '';
+      const ngoId = ngo.ngo_id || ngo.id_code || '';
+      
+      // Filter by state
+      if (selectedState !== 'All States' && ngoState !== selectedState) {
+        return false;
+      }
+      
+      // Filter by city
+      if (selectedCity !== 'All Cities' && ngoCity !== selectedCity) {
+        return false;
+      }
+      
+      // Filter by categories (multi-select)
+      if (selectedCategories.length > 0) {
+        // Check if the NGO has at least one of the selected categories
+        const hasSelectedCategory = selectedCategories.some(selectedCat => 
+          Array.isArray(ngoCategories) && ngoCategories.includes(selectedCat)
+        );
+        if (!hasSelectedCategory) {
+          return false;
+        }
+      }
+      
+      // Filter by search text
+      if (searchText) {
+        const searchLower = searchText.toLowerCase();
+        // Search in both name and ID fields
+        if (!ngoName.toLowerCase().includes(searchLower) && 
+            !ngoId.toLowerCase().includes(searchLower)) {
+          return false;
+        }
+      }
+      
+      return true;
+    }).sort((a, b) => {
+      // Sort by selected sort option
+      if (selectedSort === 'Rating') {
+        const ratingA = parseFloat(a.rating || '0');
+        const ratingB = parseFloat(b.rating || '0');
+        return ratingB - ratingA; // Sort by rating (descending)
+      } else if (selectedSort === 'Name') {
+        const nameA = (a.ngo_name || a.name || '').toLowerCase();
+        const nameB = (b.ngo_name || b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB); // Sort by name (ascending)
+      }
+      return 0;
+    });
+  };
+
+  // Handle map button press
+  const handleMapPress = () => {
+    // Navigate to map screen with filtered NGOs data
+    // @ts-ignore - Ignoring type error for navigation
+    navigation.navigate('MapScreen', { 
+      ngos: getFilteredNGOs(),
+      title: 'NGO Locations'
+    });
   };
 
   return (
@@ -309,30 +629,71 @@ const NGOScreen = () => {
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>NGO Partners</Text>
-          <TouchableOpacity 
-            style={[
-              styles.filterButton, 
-              showFilters && { backgroundColor: '#164860' }
-            ]} 
-            onPress={toggleFilters}
-          >
-            <Feather name="filter" size={18} color={showFilters ? '#fff' : '#164860'} />
-          </TouchableOpacity>
+          <View style={styles.patternOverlay}>
+            {/* Create a pattern with multiple dots */}
+            {Array(10).fill(0).map((_, i) => (
+              <PatternDot key={i} style={[styles.patternDot, { 
+                top: Math.random() * 100, 
+                left: Math.random() * 100,
+                width: 8 + Math.random() * 12,
+                height: 8 + Math.random() * 12,
+                opacity: 0.1 + Math.random() * 0.3
+              }]} />
+            ))}
+          </View>
+          <View style={styles.titleContainer}>
+            <View style={styles.titleWithIcon}>
+              <Animated.View style={[styles.titleIcon, { transform: [{ scale: titleIconAnim }] }]}>
+                <Feather name="heart" size={20} color="#00BFA6" />
+              </Animated.View>
+              <Text style={styles.title}>NGO Partners</Text>
+            </View>
+            <Text style={styles.subtitle}>Find and support verified organizations</Text>
+          </View>
+          <Animated.View style={{ transform: [{ scale: filterButtonScale }] }}>
+            <TouchableOpacity 
+              style={[
+                styles.filterButton, 
+                showFilters && styles.filterButtonActive
+              ]} 
+              onPress={toggleFilters}
+            >
+              <Feather name="filter" size={18} color={showFilters ? '#fff' : '#164860'} />
+              {getActiveFilterCount() > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{getActiveFilterCount()}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
         </View>
         
         <View style={styles.searchRow}>
           <View style={styles.searchContainer}>
-            <Feather name="search" size={20} color="#999" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search NGOs"
-              value={searchText}
-              onChangeText={setSearchText}
-            />
+            <LinearGradient
+              colors={['#f8f9fa', '#ffffff']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 0}}
+              style={styles.searchGradient}
+            >
+              <Feather name="search" size={20} color={COLORS.primary} style={styles.searchIcon} />
+              <View style={{ flex: 1, position: 'relative' }}>
+                {searchText === '' && (
+                  <View style={styles.placeholderContainer} pointerEvents="none">
+                    {renderPlaceholder(searchPlaceholder)}
+                  </View>
+                )}
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder=""
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+              </View>
+            </LinearGradient>
           </View>
           
-          <TouchableOpacity style={styles.mapButton}>
+          <TouchableOpacity style={styles.mapButton} onPress={handleMapPress}>
             <Feather name="map-pin" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -342,70 +703,103 @@ const NGOScreen = () => {
             <View style={styles.filterRow}>
               <View style={styles.filterItem}>
                 <Text style={styles.filterLabel}>State</Text>
-                <TouchableOpacity style={styles.dropdownButton}>
-                  <Text style={styles.dropdownText}>All States</Text>
-                  <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
-                </TouchableOpacity>
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity style={styles.dropdownButton} onPress={toggleStateDropdown}>
+                    <Text style={styles.dropdownText}>{selectedState}</Text>
+                    <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
+                  </TouchableOpacity>
+                  <DropdownMenu 
+                    options={states} 
+                    onSelect={handleStateSelect} 
+                    visible={showStateDropdown}
+                    onClose={() => setShowStateDropdown(false)}
+                  />
+                </View>
               </View>
               
               <View style={styles.filterItem}>
                 <Text style={styles.filterLabel}>City</Text>
-                <TouchableOpacity style={styles.dropdownButton}>
-                  <Text style={styles.dropdownText}>All Cities</Text>
-                  <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
-                </TouchableOpacity>
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity style={styles.dropdownButton} onPress={toggleCityDropdown}>
+                    <Text style={styles.dropdownText}>{selectedCity}</Text>
+                    <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
+                  </TouchableOpacity>
+                  <DropdownMenu 
+                    options={cities} 
+                    onSelect={handleCitySelect} 
+                    visible={showCityDropdown}
+                    onClose={() => setShowCityDropdown(false)}
+                  />
+                </View>
               </View>
             </View>
             
+            <View style={styles.divider} />
+            
             <View style={styles.filterRow}>
               <View style={styles.filterItem}>
-                <Text style={styles.filterLabel}>Categories</Text>
-                <TouchableOpacity style={styles.dropdownButton}>
-                  <Text style={styles.dropdownText}>All Categories</Text>
-                  <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
-                </TouchableOpacity>
+                <View style={styles.categoryLabelRow}>
+                  <Text style={styles.filterLabel}>Categories</Text>
+                  {selectedCategories.length > 0 && (
+                    <TouchableOpacity onPress={clearAllCategories}>
+                      <Text style={styles.clearAllText}>Clear All</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity 
+                    style={[styles.dropdownButton, styles.categoryDropdownButton]} 
+                    onPress={toggleCategoryDropdown}
+                  >
+                    <Text style={styles.dropdownText}>
+                      {selectedCategories.length > 0 
+                        ? `${selectedCategories.length} selected` 
+                        : 'Select categories'}
+                    </Text>
+                    <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
+                  </TouchableOpacity>
+                  
+                  <DropdownMenu 
+                    options={getFilteredCategories()} 
+                    onSelect={handleCategorySelect} 
+                    visible={showCategoryDropdown}
+                    onClose={() => setShowCategoryDropdown(false)}
+                  />
+                </View>
+                
+                {selectedCategories.length > 0 && renderSelectedCategories()}
               </View>
-              
+            </View>
+            
+            <View style={styles.divider} />
+            
+            <View style={styles.filterRow}>
               <View style={styles.filterItem}>
                 <Text style={styles.filterLabel}>Sort by</Text>
-                <TouchableOpacity style={styles.dropdownButton}>
-                  <Text style={styles.dropdownText}>Rating</Text>
-                  <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
-                </TouchableOpacity>
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity style={styles.dropdownButton} onPress={toggleSortDropdown}>
+                    <Text style={styles.dropdownText}>{selectedSort}</Text>
+                    <MaterialCommunityIcons name="chevron-down" size={14} color="#164860" />
+                  </TouchableOpacity>
+                  <DropdownMenu 
+                    options={sortOptions} // Options will be displayed in the order: Rating, Name
+                    onSelect={handleSortSelect} 
+                    visible={showSortDropdown}
+                    onClose={() => setShowSortDropdown(false)}
+                  />
+                </View>
               </View>
             </View>
             
           </View>
         )}
         
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.categoriesScroll}
-        >
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              style={[
-                styles.categoryButton,
-                category.selected ? styles.categoryButtonSelected : null
-              ]}
-              onPress={() => toggleCategory(category.id)}
-            >
-              <Text 
-                style={[
-                  styles.categoryButtonText,
-                  category.selected ? styles.categoryButtonTextSelected : null
-                ]}
-              >
-                {category.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        
         <View style={styles.featuredContainer}>
-          <Text style={styles.sectionTitle}>Featured NGOs</Text>
+          <View style={styles.modernSectionTitleContainer}>
+            <View style={styles.sectionTitleAccent} />
+            <Text style={styles.sectionTitle}>Featured NGOs</Text>
+          </View>
           
           <View style={styles.featuredCard}>
             <Image 
@@ -433,7 +827,10 @@ const NGOScreen = () => {
         </View>
         
         <View style={styles.allNGOsContainer}>
-          <Text style={styles.sectionTitle}>All NGOs</Text>
+          <View style={styles.modernSectionTitleContainer}>
+            <View style={styles.sectionTitleAccent} />
+            <Text style={styles.sectionTitle}>All NGOs</Text>
+          </View>
           
           {loading ? (
             <View style={styles.loadingContainer}>
@@ -452,7 +849,17 @@ const NGOScreen = () => {
             <>
               {(() => {
                 try {
-                  return ngoData.map(ngo => (
+                  const filteredNGOs = getFilteredNGOs();
+                  
+                  if (filteredNGOs.length === 0) {
+                    return (
+                      <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>No NGOs match your filters</Text>
+                      </View>
+                    );
+                  }
+                  
+                  return filteredNGOs.map(ngo => (
                     <NGOCard key={ngo._id || ngo.id || Math.random().toString()} ngo={ngo} />
                   ));
                 } catch (err) {
@@ -476,7 +883,7 @@ const NGOScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f0f7ff',
   },
   content: {
     flex: 1,
@@ -486,83 +893,118 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    backgroundColor: '#f0f7ff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: 'rgba(22, 72, 96, 0.1)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e6f0f6',
+    borderLeftWidth: 4,
+    borderLeftColor: '#00BFA6',
+    borderBottomWidth: 2,
+    borderBottomColor: '#e6f0f6',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  titleContainer: {
+    flexDirection: 'column',
+    zIndex: 1,
+  },
+  titleWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleIcon: {
+    marginRight: 8,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#164860',
+    letterSpacing: 0.5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
   },
   filterButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#e0e0e0',
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: '#f0f7ff',
     borderWidth: 1,
-    borderColor: '#164860',
+    borderColor: '#e6f0f6',
+    shadowColor: 'rgba(22, 72, 96, 0.1)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    elevation: 2,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    borderRadius: 12,
     height: 50,
     flex: 1,
     marginRight: 10,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#e6f0f6',
+    overflow: 'hidden',
+  },
+  searchGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+    paddingHorizontal: 15,
   },
   searchIcon: {
-    marginRight: 10,
+    padding: 5,
   },
   searchInput: {
     flex: 1,
     height: 50,
-    fontSize: 16,
-    color: '#333',
-  },
-  categoriesScroll: {
-    marginBottom: 20,
-  },
-  categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  categoryButtonSelected: {
-    backgroundColor: '#164860',
-  },
-  categoryButtonText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  categoryButtonTextSelected: {
-    color: '#fff',
+    fontSize: 15,
+    color: COLORS.primary,
+    fontWeight: '500',
   },
   featuredContainer: {
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
+    color: '#164860',
+    letterSpacing: 0.5,
   },
   featuredCard: {
     borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
+    backgroundColor: 'transparent',
+    shadowColor: 'rgba(22, 72, 96, 0.15)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e6f0f6',
   },
   featuredImage: {
     width: '100%',
@@ -570,6 +1012,9 @@ const styles = StyleSheet.create({
   },
   featuredOverlay: {
     padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
   },
   featuredTitle: {
     fontSize: 18,
@@ -607,23 +1052,32 @@ const styles = StyleSheet.create({
   allNGOsContainer: {
     marginBottom: 20,
   },
-  ngoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+  cardTouchable: {
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    borderRadius: 12,
+    shadowColor: 'rgba(22, 72, 96, 0.15)',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  ngoCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e6f0f6',
   },
   cardImageContainer: {
     position: 'relative',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    overflow: 'hidden',
   },
   cardImage: {
     width: '100%',
     height: 160,
+    resizeMode: 'cover',
   },
   verifiedBadge: {
     position: 'absolute',
@@ -635,42 +1089,49 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   ngoName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#164860',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   ratingContainer: {
     flexDirection: 'row',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   ngoId: {
     fontSize: 12,
     color: '#888',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   categoryContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   categoryTag: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 4,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginRight: 6,
     marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#e6f2ff',
   },
   categoryText: {
     fontSize: 11,
-    color: '#666',
+    color: '#164860',
+    fontWeight: '500',
   },
   locationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 4,
   },
   locationItem: {
     flexDirection: 'row',
@@ -723,18 +1184,23 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   mapButton: {
-    backgroundColor: '#164860',
-    borderRadius: 8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   filterContainer: {
     backgroundColor: '#fff',
     borderRadius: 10,
-    padding: 14,
-    marginBottom: 12,
+    padding: 16,
+    marginBottom: 16,
     // shadowColor: '#000',
     // shadowOffset: { width: 0, height: 1 },
     // shadowOpacity: 0.1,
@@ -744,7 +1210,7 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   filterItem: {
     flex: 1,
@@ -753,7 +1219,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 3,
+    marginBottom: 6,
   },
   dropdownButton: {
     flexDirection: 'row',
@@ -773,6 +1239,10 @@ const styles = StyleSheet.create({
   loadingContainer: {
     padding: 20,
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(230, 240, 246, 0.8)',
   },
   loadingText: {
     marginTop: 10,
@@ -782,8 +1252,10 @@ const styles = StyleSheet.create({
   errorContainer: {
     padding: 20,
     alignItems: 'center',
-    backgroundColor: '#ffeeee',
+    backgroundColor: 'rgba(255, 238, 238, 0.7)',
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(204, 0, 0, 0.1)',
   },
   errorText: {
     color: '#cc0000',
@@ -792,10 +1264,193 @@ const styles = StyleSheet.create({
   emptyContainer: {
     padding: 20,
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(230, 240, 246, 0.8)',
   },
   emptyText: {
     color: '#666',
     fontSize: 16,
+  },
+  // Add dropdown menu styles
+  dropdownBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    zIndex: 999,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  // Add multi-select dropdown styles
+  categoryLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  clearAllText: {
+    fontSize: 12,
+    color: '#00BFA6',
+    fontWeight: '500',
+    paddingHorizontal: 5,
+  },
+  multiSelectDropdown: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    minHeight: 40,
+  },
+  multiSelectIcon: {
+    marginRight: 8,
+  },
+  selectedTextStyle: {
+    fontSize: 12,
+    color: '#333',
+    marginLeft: 5,
+  },
+  selectedItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginVertical: 3,
+    marginRight: 8,
+    backgroundColor: '#E6F2FF',
+    borderRadius: 14,
+  },
+  selectedItemText: {
+    fontSize: 12,
+    color: '#164860',
+    marginRight: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 8,
+  },
+  categoryDropdownButton: {
+    marginBottom: 8,
+  },
+  
+  selectedCategoriesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  placeholderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    zIndex: 1,
+    paddingLeft: 0,
+  },
+  filterButtonActive: {
+    backgroundColor: '#164860',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#cc0000',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#fff',
+  },
+  filterBadgeText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  patternOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.05,
+    zIndex: 0,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#164860',
+  },
+  patternDot: {
+    position: 'absolute',
+    borderRadius: 20,
+    backgroundColor: '#00BFA6',
+  },
+  modernSectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 8,
+    paddingHorizontal: 4,
+  },
+  sectionTitleAccent: {
+    width: 4,
+    height: 26,
+    backgroundColor: '#00BFA6',
+    borderRadius: 2,
+    marginRight: 12,
+    shadowColor: '#00BFA6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sectionTitleBadge: {
+    backgroundColor: '#f0f7ff',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 10,
+    borderWidth: 1,
+    borderColor: '#e6f0f6',
+  },
+  sectionTitleBadgeText: {
+    fontSize: 12,
+    color: '#164860',
+    fontWeight: '500',
   },
 });
 

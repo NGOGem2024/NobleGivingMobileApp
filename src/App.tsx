@@ -10,6 +10,7 @@ import OtpVerification from './screens/OtpVerification';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import BottomTabs from './components/BottomTabs';
 import NGODetailScreen from './components/NGODetailScreen';
+import MapScreen from './screens/MapScreen';
 
 const Stack = createStackNavigator();
 
@@ -78,6 +79,11 @@ const App = () => {
           component={NGODetailScreen}
           options={{ headerShown: false }}
           initialParams={{ ngoId: "66c47659f618b819aabe91b4" }}
+        />
+        <Stack.Screen
+          name="MapScreen"
+          component={MapScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

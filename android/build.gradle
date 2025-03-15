@@ -6,6 +6,10 @@ buildscript {
         targetSdkVersion = 34
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.0.21"
+        
+        // Add Google Play Services version
+        googlePlayServicesVersion = "17.0.0"
+        androidMapsUtilsVersion = "3.4.0"
     }
     repositories {
         google()

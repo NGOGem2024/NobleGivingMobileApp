@@ -325,9 +325,17 @@ const NGODetailScreen = ({ ngoId }: { ngoId?: string }) => {
           <Text style={styles.ngoEstablished}>Established: {ngoData?.ngo_established || '2008'}</Text>
         </View>
         <View style={styles.categoryContainer}>
-          <Text style={styles.categoryText}>
-            #{ngoData?.ngo_category?.[0] || 'Children'}
-          </Text>
+          {ngoData?.ngo_category ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {ngoData.ngo_category.map((category: string, index: number) => (
+                <Text key={index} style={[styles.categoryText, index > 0 && {marginLeft: 8}]}>
+                  #{category}
+                </Text>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={styles.categoryText}>#Children</Text>
+          )}
         </View>
         <View style={styles.ratingContainer}>
           <Icon name="star" size={16} color="#164860" />
@@ -673,16 +681,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   categoryContainer: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    flexWrap: 'wrap',
+  },
+  categoryText: {
     backgroundColor: '#E6F2FF',
-    alignSelf: 'flex-start',
+    color: '#0066CC',
+    fontSize: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    marginBottom: 8,
-  },
-  categoryText: {
-    color: '#0066CC',
-    fontSize: 12,
+    marginRight: 5,
+    marginBottom: 5,
   },
   ratingContainer: {
     flexDirection: 'row',

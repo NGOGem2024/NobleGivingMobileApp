@@ -84,6 +84,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        
+        // Add this line for Google Maps
+        missingDimensionStrategy 'react-native-google-maps', 'standard'
     }
     signingConfigs {
         debug {
@@ -110,7 +113,13 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-     implementation 'com.google.android.gms:play-services-auth:20.7.0'
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
+    
+    // Add Google Maps dependencies
+    implementation(project(':react-native-maps'))
+    implementation "com.google.android.gms:play-services-base:${rootProject.ext.googlePlayServicesVersion}"
+    implementation "com.google.android.gms:play-services-maps:${rootProject.ext.googlePlayServicesVersion}"
+    implementation "com.google.maps.android:android-maps-utils:${rootProject.ext.androidMapsUtilsVersion}"
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

@@ -17,6 +17,10 @@ end
 target 'NobleGiving' do
   config = use_native_modules!
 
+  # Add Google Maps pod
+  pod 'GoogleMaps', '7.4.0'
+  pod 'Google-Maps-iOS-Utils', '4.1.0'
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
