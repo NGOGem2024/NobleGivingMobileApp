@@ -11,6 +11,8 @@ import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import BottomTabs from './components/BottomTabs';
 import NGODetailScreen from './components/NGODetailScreen';
 import MapScreen from './screens/MapScreen';
+import BasketScreen from './screens/BasketScreen';
+import NGOScreen from './screens/NGOScreen';
 
 const Stack = createStackNavigator();
 
@@ -69,16 +71,19 @@ const App = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="NGOScreen"
+          component={NGOScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="NGODetailScreen"
           component={NGODetailScreen}
           options={{ headerShown: false }}
         />
-        {/* Keep the SamarthyaNGO screen for backward compatibility */}
         <Stack.Screen
-          name="SamarthyaNGO"
-          component={NGODetailScreen}
+          name="BasketScreen"
+          component={BasketScreen}
           options={{ headerShown: false }}
-          initialParams={{ ngoId: "66c47659f618b819aabe91b4" }}
         />
         <Stack.Screen
           name="MapScreen"

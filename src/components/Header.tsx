@@ -1,29 +1,44 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 
+type RootStackParamList = {
+  BasketScreen: undefined;
+  // Add other screens as needed
+};
 
-const Header = ({ }) => {
+type NavigationProp = StackNavigationProp<RootStackParamList, 'BasketScreen'>;
+
+const Header = () => {
+  const navigation = useNavigation<NavigationProp>();
+  
+  const navigateToBasket = () => {
+    navigation.navigate('BasketScreen');
+  };
+  
   return (
     <View style={styles.header}>
       {/* App Title */}
-      <TouchableOpacity   style={styles.titleContainer}>
-      <Image
-      source={require('../assets/logo1.png')} // Replace with your splash logo
-                        style={styles.logoImage} />
-      <Text style={styles.title}>NobleGiving</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.titleContainer}>
+        <Image
+          source={require('../assets/logo1.png')} 
+          style={styles.logoImage} 
+        />
+        <Text style={styles.title}>NobleGiving</Text>
+      </TouchableOpacity>
 
       {/* Right-side Icons */}
       <View style={styles.iconContainer}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Icon name="search" size={24} color="white" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.iconButton}>
-        <Image
-      source={require('../assets/basket.png')} // Replace with your splash logo
-                        style={styles.basketImage} />
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={navigateToBasket}
+        >
+          <Image
+            source={require('../assets/basket.png')} 
+            style={styles.basketImage} 
+          />
         </TouchableOpacity>
       </View>
     </View>

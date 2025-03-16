@@ -17,7 +17,9 @@ interface Props {
 }
 
 const SplashScreen: React.FC<Props> = ({ navigation }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current; // Start opacity at 0
+  const logoFade = useRef(new Animated.Value(0)).current;
+  const textFade = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.8)).current;
 
   const checkUserLogin = useCallback(async () => {
     try {
@@ -36,28 +38,58 @@ const SplashScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     let isMounted = true;
 
-    // Fade-in animation
-    Animated.timing(fadeAnim, {
-      toValue: 1, // Fade to full opacity
-      duration: 1000, // 1 second duration
-      useNativeDriver: true,
-    }).start();
+    // Sequence of animations
+    Animated.sequence([
+      // First fade in and scale up the logo
+      Animated.parallel([
+        Animated.timing(logoFade, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Then fade in the text
+      Animated.timing(textFade, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     const timer = setTimeout(() => {
       if (isMounted) checkUserLogin();
-    }, 1300);
+    }, 2300); // Increased slightly to allow for the full animation sequence
 
     return () => {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [fadeAnim, checkUserLogin]);
+  }, [logoFade, textFade, logoScale, checkUserLogin]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <Animated.View style={[styles.logoContainer, { opacity: fadeAnim }]}>
-        <Image source={require('../assets/logo.png')} style={styles.logo} />
-      </Animated.View>
+      <View style={styles.contentContainer}>
+        <Animated.View 
+          style={[
+            styles.logoContainer, 
+            { 
+              opacity: logoFade,
+              transform: [{ scale: logoScale }]
+            }
+          ]}
+        >
+          <Image source={require('../assets/logo-edit.png')} style={styles.logo} />
+        </Animated.View>
+        
+        <Animated.View style={[styles.textContainer, { opacity: textFade }]}>
+          <Image source={require('../assets/Soft-White-text.png')} style={styles.textLogo} />
+        </Animated.View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -71,13 +103,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  contentContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 26,
   },
   logo: {
-    width: 350,
-    height: 350,
-    marginBottom: 20,
+    width: 90,
+    height: 90,
+  },
+  textContainer: {
+    alignItems: 'center',
+  },
+  textLogo: {
+    width: 245,
+    height: 45,
+    resizeMode: 'contain',
   },
 });
