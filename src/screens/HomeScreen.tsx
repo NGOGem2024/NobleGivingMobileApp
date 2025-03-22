@@ -1,23 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet, StatusBar } from 'react-native';
+import { StyleSheet, StatusBar } from 'react-native';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import FeaturedCampaigns from '../components/FeaturedCampaigns';
 import Categories from '../components/Categories';
+import MissionSection from '../components/MissionSection';
+import DonationImpact from '../components/DonationImpact';
+import UserJourneys from '../components/UserJourneys';
 import { ScrollView } from 'react-native-gesture-handler';
 
 const HomeScreen = () => {
   return (
-    <ScrollView>
-
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <StatusBar backgroundColor="#164860" barStyle="light-content" />
-      <Header/>
-      <Hero/>
-      <FeaturedCampaigns/>
-      <Categories/>
-    <View style={styles.container}>
-      <Text style={styles.text}>Welcome to the Home Screen!</Text>
-    </View>
+      <Header />
+      <Hero />
+      <FeaturedCampaigns />
+      <Categories />
+      <MissionSection />
+      <DonationImpact />
+      <UserJourneys />
     </ScrollView>
   );
 };
@@ -25,12 +27,7 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    backgroundColor: '#f0f7ff',
   },
 });
 
