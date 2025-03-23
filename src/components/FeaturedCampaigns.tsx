@@ -125,7 +125,7 @@ const FeaturedCampaigns = () => {
           <View style={styles.titleContainer}>
             <View style={styles.sectionTitleContainer}>
               <LinearGradient
-                colors={['rgba(30, 93, 120, 0.12)', 'rgba(30, 93, 120, 0.05)']}
+                colors={['rgba(36, 106, 133, 0.05)', 'rgba(30, 93, 120, 0.05)']}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 0}}
                 style={styles.titleBackground}
@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
   sectionTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   titleBackground: {
     flexDirection: 'row',
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     borderWidth: 2,
-    borderColor: 'ffffff',
+    borderColor: '#ffffff',
   },
   imageContainer: {
     position: 'relative',

@@ -1451,6 +1451,5 @@ const styles = StyleSheet.create({
     color: '#164860',
     fontWeight: '500',
   },
-});
+});export default NGOScreen;
 
-export default NGOScreen;
