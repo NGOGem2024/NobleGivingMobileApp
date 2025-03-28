@@ -27,7 +27,6 @@ const EndPoint = {
     ngo_get_image: 'ngo/get-images/',
     ngo_update_profile: 'update-ngo/',
     ngo_get_sas_url: 'ngo/get-sas-url',
-
 };
 
 // API service functions

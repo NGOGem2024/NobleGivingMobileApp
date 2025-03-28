@@ -26,6 +26,7 @@ const Stack = createStackNavigator();
 
 // Wrapper component for OTP verification
 const OtpVerificationWrapper = ({ navigation, route }: { navigation: any; route: any }) => (
+
   <OtpVerification
     navigation={navigation}
     route={route}
@@ -35,10 +36,7 @@ const OtpVerificationWrapper = ({ navigation, route }: { navigation: any; route:
 );
 
 
-
 const App = () => {
-
-
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Splash">
@@ -79,8 +77,8 @@ const App = () => {
           component={WelcomeScreen} 
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="Login"
+        <Stack.Screen 
+          name="Login" 
           component={LoginScreen} 
           options={{ headerShown: false }} 
         />

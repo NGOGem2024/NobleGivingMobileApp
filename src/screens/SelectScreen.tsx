@@ -82,7 +82,7 @@ const SelectScreen: React.FC<SelectScreenProps> = ({ navigation }) => {
             style={styles.button}
             onPress={() => navigation.navigate('NGOWelcome')}
           >
-            <Text style={styles.buttonText}>Start a free fundraiser</Text>
+            <Text style={styles.buttonText}>Start a fundraiser</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 

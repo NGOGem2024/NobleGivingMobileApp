@@ -627,7 +627,7 @@ const NGOScreen = () => {
     <View style={styles.container}>
       <Header />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 70 }}>
         <View style={styles.titleRow}>
           <View style={styles.patternOverlay}>
             {/* Create a pattern with multiple dots */}
@@ -875,7 +875,6 @@ const NGOScreen = () => {
           )}
         </View>
       </ScrollView>
-      
     </View>
   );
 };
@@ -1452,6 +1451,5 @@ const styles = StyleSheet.create({
     color: '#164860',
     fontWeight: '500',
   },
-});
+});export default NGOScreen;
 
-export default NGOScreen;

@@ -15,6 +15,7 @@ type RootStackParamList = {
   Login:undefined;
   SignUp:undefined;
   Home:undefined;
+  NgoOTPVerification:{ email: string };
 };
 
 type NGOLoginNavigationProp = StackNavigationProp<RootStackParamList,'Login'>;

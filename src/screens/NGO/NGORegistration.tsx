@@ -1710,7 +1710,7 @@ const Step2ValidationSchema = Yup.object().shape({
 const NGORegistration = () => {
   const [step, setStep] = useState(1);
   const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formikRef = useRef<FormikProps<FormValues>>(null);
   
