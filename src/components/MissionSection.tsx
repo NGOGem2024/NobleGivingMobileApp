@@ -278,6 +278,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginHorizontal: 14,
     marginVertical: 10,
+    paddingBottom:24
     // backgroundColor: 'white',
   },
   headerContainer: {

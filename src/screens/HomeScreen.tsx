@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { StyleSheet, StatusBar, RefreshControl } from 'react-native';
+import { StyleSheet, StatusBar, RefreshControl, View } from 'react-native';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import FeaturedCampaigns from '../components/FeaturedCampaigns';
@@ -48,8 +48,9 @@ const HomeScreen = () => {
       <FeaturedCampaigns key={`featured-${componentsKey}`} />
       <Categories key={`categories-${componentsKey}`} />
       <MissionSection key={`mission-${componentsKey}`} />
-      <DonationImpact key={`impact-${componentsKey}`} />
-      <UserJourneys key={`journeys-${componentsKey}`} />
+      {/* <DonationImpact key={`impact-${componentsKey}`} /> */}
+      {/* <UserJourneys key={`journeys-${componentsKey}`} /> */}
+      <View style={styles.bottomPadding} />
     </ScrollView>
   );
 };
@@ -58,6 +59,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f0f7ff',
+  },
+  bottomPadding: {
+    height: 60, // Adjust this value based on your bottom bar height
   },
 });
 

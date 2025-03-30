@@ -17,16 +17,16 @@ const heroItems = [
   {
     id: '2',
     image: 'https://images.unsplash.com/photo-1599059813005-11265ba4b4ce?q=80&w=2000&auto=format&fit=crop',
-    tagline: 'Making A Difference Together',
-    title: 'Empowering\nNonprofits',
-    description: 'Connect with verified NGOs and discover meaningful ways to contribute to causes that matter to you.'
+    tagline: '',
+    title: 'Healing Hearts\nChanging Lives',
+    description: 'Your donation mends hearts, restores hope, and creates lasting change for those in need.'
   },
   {
     id: '3',
     image: 'https://images.unsplash.com/photo-1560252829-804f1aedf1be?q=80&w=2000&auto=format&fit=crop',
-    tagline: 'Every Donation Counts',
-    title: 'Supporting\nCommunities',
-    description: 'Your generosity helps create sustainable impact and transforms lives in communities around the world.'
+    tagline: '',
+    title: 'Giving Hope to those In Need',
+    description: 'Your donation helps children and families facing tough challenges build a brighter future.'
   }
 ];
 

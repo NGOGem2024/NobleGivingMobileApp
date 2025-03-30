@@ -6,10 +6,10 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import axios from 'axios';
 
 // Define the type for navigation
-type WelcomeScreenNavigationProp = StackNavigationProp<any>;
+type NGOWelcomeScreenNavigationProp = StackNavigationProp<any>;
 
-interface WelcomeScreenProps {
-  navigation:WelcomeScreenNavigationProp;
+interface NGOWelcomeScreenProps {
+  navigation:NGOWelcomeScreenNavigationProp;
 }
 
 GoogleSignin.configure({
@@ -19,48 +19,29 @@ GoogleSignin.configure({
 });
 
 
-const WelcomeScreen:React.FC<WelcomeScreenProps> = ({navigation}) => {
-
-  const signInWithGoogle = async () => {
-    try {
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      console.log('User Info:', userInfo);
-      if (!userInfo.idToken) {
-        throw new Error("No ID Token found in Google Sign-In response");
-      }
-      const idToken = userInfo.idToken; // ✅ Extract idToken properly
-      await AsyncStorage.setItem('user', JSON.stringify(userInfo));
-      // Send token to backend
-      const response = await axios.post('https://noblegivingbackend.azurewebsites.net/auth/google', { idToken });
-      console.log('Backend Response:', response.data);
-    } catch (error) {
-      console.error('Google Sign-In Error:', error);
-    }
-  };
-
+const NGOWelcomeScreen:React.FC<NGOWelcomeScreenProps> = ({navigation}) => {
         return (
           <SafeAreaView style={styles.container}>
             <View style={styles.contentContainer}>
               <View style={styles.logoContainer}>
                  <Image
-                        source={require('../assets/fullnamelogo.png')} // Replace with your splash logo
+                        source={require('../../assets/fullnamelogo.png')} // Replace with your splash logo
                         style={styles.logo}
                       />
               </View>
-              <Text style={styles.welcomeText}>Welcome! Doner</Text>
+              <Text style={styles.welcomeText}>Welcome, NGO</Text>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.button, styles.createAccountButton]}
-                onPress={() => navigation.navigate('Signup')}
+                onPress={() => navigation.navigate('NGORegistration')}
               >
                 <Text style={styles.buttonTextWhite}
                 >Create Account</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.button, styles.loginButton]}
-                onPress={() => navigation.navigate('Login')}
+                onPress={() => navigation.navigate('NGOLogin')}
               >
                 <Text style={styles.buttonTextPurple}>Login</Text>
               </TouchableOpacity>
@@ -74,11 +55,10 @@ const WelcomeScreen:React.FC<WelcomeScreenProps> = ({navigation}) => {
 
             <TouchableOpacity 
             style={[styles.signInButton,styles.gloginbutton]}
-            onPress={signInWithGoogle}
             >
               <View style={styles.signInContent}>
                 <Image 
-                  source={require('../assets/google-color.png')}
+                  source={require('../../assets/google-color.png')}
                   style={styles.Glogo}
                 />
                 <Text style={styles.buttonTextBlack}>Sign in with another account</Text>
@@ -91,7 +71,7 @@ const WelcomeScreen:React.FC<WelcomeScreenProps> = ({navigation}) => {
         );
       };
 
-export default WelcomeScreen;
+export default NGOWelcomeScreen;
 
 const styles = StyleSheet.create({
     container: {
@@ -141,12 +121,12 @@ const styles = StyleSheet.create({
         marginBottom: 15,
       },
       createAccountButton: {
-        backgroundColor: '#164860',
+        backgroundColor: '#01d6d4',
       },
       loginButton: {
         backgroundColor: '#fff',
         borderWidth: 1,
-        borderColor: '#164860',
+        borderColor: '#01d6d4',
       },
       buttonTextWhite: {
         color: '#fff',
@@ -158,7 +138,7 @@ const styles = StyleSheet.create({
       },
       
       buttonTextPurple: {
-        color: '#164860',
+        color: '#01d6d4',
         fontWeight: 'bold',
       },
       socialButtonsContainer: {
@@ -252,9 +232,3 @@ const styles = StyleSheet.create({
         borderColor: '#000000'
       }
 });
-
-
-
-
-
-
